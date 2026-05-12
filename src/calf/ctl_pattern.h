@@ -44,7 +44,7 @@ typedef struct calf_pattern_handle {
 } calf_pattern_handle;
 struct CalfPattern
 {
-    GtkEventBox parent;
+    GtkWidget parent;
     bool force_redraw, dblclick;
     const static int border = 2;
     const static int minner = 1;
@@ -58,13 +58,11 @@ struct CalfPattern
     calf_pattern_handle handle_hovered;
     double values[8][8], startval;
     cairo_surface_t *background_surface;
-    /// Cached hand (drag) cursor
-    GdkCursor *hand_cursor;
 };
 
 struct CalfPatternClass
 {
-    GtkEventBoxClass parent_class;
+    GtkWidgetClass parent_class;
 };
 
 extern GtkWidget *calf_pattern_new();

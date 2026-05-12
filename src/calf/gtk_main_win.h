@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU Lesser General
  * Public License along with this program; if not, write to the
- * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA 02111-1307, USA.
  */
 #ifndef __CALF_MAIN_WIN_H
@@ -40,10 +40,10 @@
 #include <fstream>
 
 namespace calf_plugins {
-    
+
     class gtk_main_window;
     struct image_factory;
-    
+
     struct plugin_strip
     {
         int id;
@@ -54,7 +54,7 @@ namespace calf_plugins {
         calf_connector *connector;
         GtkWidget *strip_table, *name, *entry, *button, *con, *midi_in, *extra, *leftBG, *rightBG, *inBox, *outBox;
         std::vector<GtkWidget *> audio_in, audio_out;
-        
+
         plugin_strip()
         : id()
         , main_win()
@@ -74,9 +74,9 @@ namespace calf_plugins {
         , inBox()
         , outBox()
         {}
-        
+
     };
-    
+
     class gtk_main_window: public main_window_iface, public gui_environment, public calf_utils::config_listener_iface
     {
     public:
@@ -87,14 +87,13 @@ namespace calf_plugins {
             add_plugin_params(gtk_main_window *_main_win, const std::string &_name)
             : main_win(_main_win), name(_name) {}
         };
-        
+
     public:
         GtkWindow *toplevel;
         GtkWidget *all_vbox;
         GtkWidget *strips_table;
-        GtkUIManager *ui_mgr;
-        GtkActionGroup *std_actions, *plugin_actions;
-        GtkIconFactory *factory;
+        GSimpleActionGroup *win_actions;
+        GMenu *menu_model;
         std::map<plugin_ctl_iface *, plugin_strip *> plugins;
         std::vector<jack_host *> plugin_queue;
         bool is_closed;
@@ -103,24 +102,24 @@ namespace calf_plugins {
         main_window_owner_iface *owner;
         calf_utils::config_notifier_iface *notifier;
         window_state winstate;
-        
+
     protected:
         GtkWidget *progress_window;
         window_update_controller refresh_controller;
-    
+
     protected:
         plugin_strip *create_strip(jack_host *plugin);
         void update_strip(plugin_ctl_iface *plugin);
         void sort_strips();
         static gboolean on_idle(void *data);
-        std::string make_plugin_list(GtkActionGroup *actions);
-        static void add_plugin_action(GtkWidget *src, gpointer data);
+        void fill_plugin_menu(GMenu *menu);
+        static void add_plugin_action(GSimpleAction *action, GVariant *param, gpointer data);
         void display_error(const char *error, const char *filename);
         void on_config_change();
         GtkWidget *create_vu_meter();
         GtkWidget *create_meter_scale();
         /// Create a toplevel window with progress bar
-        GtkWidget *create_progress_window();        
+        GtkWidget *create_progress_window();
 
     public:
         gtk_main_window();
@@ -134,7 +133,7 @@ namespace calf_plugins {
         void refresh_plugin(plugin_ctl_iface *plugin);
         void refresh_plugin_param(plugin_ctl_iface *plugin, int param_no);
         void on_closed();
-        void open_gui(plugin_ctl_iface *plugin);    
+        void open_gui(plugin_ctl_iface *plugin);
         void create();
         void create_status_icon();
         void open_file();
@@ -150,23 +149,22 @@ namespace calf_plugins {
         virtual void add_condition(const std::string &name);
         /// Display an error dialog
         virtual void show_error(const std::string &text);
-        
+
         image_factory images;
         GtkListStore *get_styles();
         void load_style(std::string path);
 
     private:
-        static const GtkActionEntry actions[];
-        static void on_open_action(GtkWidget *widget, gtk_main_window *main);
-        static void on_save_action(GtkWidget *widget, gtk_main_window *main);
-        static void on_save_as_action(GtkWidget *widget, gtk_main_window *main);
-        static void on_preferences_action(GtkWidget *widget, gtk_main_window *main);
-        static void on_reorder_action(GtkWidget *widget, gtk_main_window *main);
-        static void on_exit_action(GtkWidget *widget, gtk_main_window *main);
-        static void on_edit_title(GtkWidget *label, GdkEventButton *event, plugin_strip *strip);
+        static void on_open_action(GSimpleAction *action, GVariant *param, gpointer data);
+        static void on_save_action(GSimpleAction *action, GVariant *param, gpointer data);
+        static void on_save_as_action(GSimpleAction *action, GVariant *param, gpointer data);
+        static void on_preferences_action(GSimpleAction *action, GVariant *param, gpointer data);
+        static void on_reorder_action(GSimpleAction *action, GVariant *param, gpointer data);
+        static void on_exit_action(GSimpleAction *action, GVariant *param, gpointer data);
+        static void on_edit_title(GtkGestureClick *gesture, int n_press, double x, double y, plugin_strip *strip);
         static void on_activate_entry(GtkWidget *entry, plugin_strip *strip);
-        static gboolean on_blur_entry(GtkWidget *entry, GdkEvent *event, plugin_strip *strip);
-        static void on_table_clicked(GtkWidget *table, GdkEvent *event);
+        static void on_blur_entry(plugin_strip *strip);
+        static void on_table_clicked(GtkGestureClick *gesture, int n_press, double x, double y, gpointer data);
     };
 };
 

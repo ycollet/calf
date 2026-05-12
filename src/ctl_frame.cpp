@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU Lesser General
  * Public License along with this program; if not, write to the
- * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301  USA
  */
 
@@ -36,55 +36,56 @@ calf_frame_new(const char *label)
     gtk_frame_set_label(GTK_FRAME(self), label);
     return widget;
 }
-static gboolean
-calf_frame_expose (GtkWidget *widget, GdkEventExpose *event)
+static void
+calf_frame_snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
 {
     g_assert(CALF_IS_FRAME(widget));
     if (gtk_widget_is_drawable (widget)) {
-        
-        GdkWindow *window = widget->window;
-        cairo_t *c = gdk_cairo_create(GDK_DRAWABLE(window));
+
+        int width  = gtk_widget_get_width(widget);
+        int height = gtk_widget_get_height(widget);
+        graphene_rect_t bounds = GRAPHENE_RECT_INIT(0, 0, width, height);
+        cairo_t *c = gtk_snapshot_append_cairo(snapshot, &bounds);
         cairo_text_extents_t extents;
-        
-        int ox = widget->allocation.x;
-        int oy = widget->allocation.y;
-        int sx = widget->allocation.width;
-        int sy = widget->allocation.height;
-        
-        float rad;
-        gtk_widget_style_get(widget, "border-radius", &rad, NULL);
-    
-        double pad  = widget->style->xthickness;
+
+        int ox = 0;
+        int oy = 0;
+        int sx = width;
+        int sy = height;
+
+        float rad = 4.f;
+
+        double pad  = 1;
         double txp  = 4;
         double m    = 0.5;
         double size = 10;
-        
+
         float r, g, b;
-    
+
         cairo_rectangle(c, ox, oy, sx, sy);
         cairo_clip(c);
-        
-        
+
+
         const gchar *lab = gtk_frame_get_label(GTK_FRAME(widget));
-        
+
         cairo_select_font_face(c, "Sans",
               CAIRO_FONT_SLANT_NORMAL,
               CAIRO_FONT_WEIGHT_NORMAL);
         cairo_set_font_size(c, size);
-        
+
         cairo_text_extents(c, lab, &extents);
-        
+
         double lw = extents.width + txp * 2.;
-        
+
         cairo_set_line_width(c, 1.);
-        
+
         cairo_move_to(c, ox + rad + txp + m, oy + size - 2 + m);
         get_text_color(widget, NULL, &r, &g, &b);
         cairo_set_source_rgb(c, r, g, b);
         cairo_show_text(c, lab);
         get_fg_color(widget, NULL, &r, &g, &b);
         cairo_set_source_rgb(c, r, g, b);
-        
+
         // top left
         cairo_move_to(c, ox + m, oy + pad + rad + m);
         cairo_arc (c, ox + rad + m, oy + rad + pad + m, rad, 1 * M_PI, 1.5 * M_PI);
@@ -104,33 +105,28 @@ calf_frame_expose (GtkWidget *widget, GdkEventExpose *event)
         // left
         cairo_line_to(c, ox + m, oy + rad + pad + m);
         cairo_stroke(c);
-        
+
         cairo_destroy(c);
     }
-    if (gtk_bin_get_child(GTK_BIN(widget))) {
-        gtk_container_propagate_expose(GTK_CONTAINER(widget),
-                                       gtk_bin_get_child(GTK_BIN(widget)),
-                                       event);
-    }
-    return FALSE;
+
+    // Let the parent GtkFrame snapshot handle the child widget
+    GtkWidgetClass *parent_class = (GtkWidgetClass*)g_type_class_peek_parent(CALF_FRAME_GET_CLASS(CALF_FRAME(widget)));
+    if (parent_class->snapshot)
+        parent_class->snapshot(widget, snapshot);
 }
 
 static void
 calf_frame_class_init (CalfFrameClass *klass)
 {
     GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
-    widget_class->expose_event = calf_frame_expose;
-    gtk_widget_class_install_style_property(
-        widget_class, g_param_spec_float("border-radius", "Border Radius", "Generate round edges",
-        0, 24, 4, GParamFlags(G_PARAM_READWRITE)));
+    widget_class->snapshot = calf_frame_snapshot;
 }
 
 static void
 calf_frame_init (CalfFrame *self)
 {
     GtkWidget *widget = GTK_WIDGET(self);
-    widget->requisition.width = 40;
-    widget->requisition.height = 40;
+    gtk_widget_set_size_request(widget, 40, 40);
 }
 
 GType
@@ -152,7 +148,7 @@ calf_frame_get_type (void)
 
         for (int i = 0; ; i++) {
             const char *name = "CalfFrame";
-            //char *name = g_strdup_printf("CalfFrame%u%d", 
+            //char *name = g_strdup_printf("CalfFrame%u%d",
                 //((unsigned int)(intptr_t)calf_frame_class_init) >> 16, i);
             if (g_type_from_name(name)) {
                 //free(name);

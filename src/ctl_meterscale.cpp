@@ -15,10 +15,10 @@
  *
  * You should have received a copy of the GNU Lesser General
  * Public License along with this program; if not, write to the
- * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301  USA
  */
- 
+
 #include <calf/ctl_meterscale.h>
 
 using namespace calf_plugins;
@@ -35,22 +35,23 @@ calf_meter_scale_new()
     //CalfMeterScale *self = CALF_METER_SCALE(widget);
     return widget;
 }
-static gboolean
-calf_meter_scale_expose (GtkWidget *widget, GdkEventExpose *event)
+static void
+calf_meter_scale_snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
 {
     g_assert(CALF_IS_METER_SCALE(widget));
     CalfMeterScale *ms = CALF_METER_SCALE(widget);
     if (gtk_widget_is_drawable (widget)) {
-        
-        GdkWindow *window = widget->window;
-        cairo_t *cr = gdk_cairo_create(GDK_DRAWABLE(window));
+
+        int width  = gtk_widget_get_width(widget);
+        int height = gtk_widget_get_height(widget);
+
+        graphene_rect_t bounds = GRAPHENE_RECT_INIT(0, 0, width, height);
+        cairo_t *cr = gtk_snapshot_append_cairo(snapshot, &bounds);
         cairo_text_extents_t extents;
-        
-        double ox = widget->allocation.x;
-        double oy = widget->allocation.y;
-        double width  = widget->allocation.width;
-        double height = widget->allocation.height;
-        double xthick = widget->style->xthickness;
+
+        double ox = 0;
+        double oy = 0;
+        double xthick = 1;
         double text_w = 0, bar_x = 0, bar_width = 0, bar_y = 0;
         float r, g, b;
         double text_m = 3;
@@ -58,9 +59,9 @@ calf_meter_scale_expose (GtkWidget *widget, GdkEventExpose *event)
         double dot_m  = 2;
         double dot_y  = 0;
         double dot_y2 = 0;
-        cairo_rectangle(cr, ox, oy, width, height);
+        cairo_rectangle(cr, 0, 0, width, height);
         cairo_clip(cr);
-        
+
         if (ms->position) {
             cairo_select_font_face(cr, "cairo:sans-serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
             cairo_set_font_size(cr, 8);
@@ -89,7 +90,7 @@ calf_meter_scale_expose (GtkWidget *widget, GdkEventExpose *event)
                 bar_width = width - text_w - 2 * xthick - 2 * text_m;
                 break;
         }
-        
+
         switch (ms->dots) {
             case 0:
             default:
@@ -113,7 +114,7 @@ calf_meter_scale_expose (GtkWidget *widget, GdkEventExpose *event)
                 dot_y2 = oy + dot_s / 2;
                 break;
         }
-        
+
         const unsigned int s = ms->marker.size();
         get_fg_color(widget, NULL, &r, &g, &b);
         cairo_set_source_rgb(cr, r, g, b);
@@ -139,39 +140,41 @@ calf_meter_scale_expose (GtkWidget *widget, GdkEventExpose *event)
         }
         cairo_destroy(cr);
     }
-    return FALSE;
 }
 
 static void
-calf_meter_scale_size_request (GtkWidget *widget,
-                           GtkRequisition *requisition)
+calf_meter_scale_measure (GtkWidget *widget, GtkOrientation orientation, int for_size,
+                          int *minimum, int *natural, int *minimum_baseline, int *natural_baseline)
 {
     g_assert(CALF_IS_METER_SCALE(widget));
     CalfMeterScale *self = CALF_METER_SCALE(widget);
-    
-    double ythick = widget->style->ythickness;
+
+    double ythick = 1;
     double text_h = 8; // FIXME: Pango layout should be used here
     double dot_s  = 2;
     double dot_m  = 2;
-    
-    requisition->height = ythick*2 + text_h + (dot_m + dot_s) * (self->dots == 3 ? 2 : 1);
+
+    if (orientation == GTK_ORIENTATION_HORIZONTAL)
+        *minimum = *natural = 40;
+    else
+        *minimum = *natural = (int)(ythick*2 + text_h + (dot_m + dot_s) * (self->dots == 3 ? 2 : 1));
+    if (minimum_baseline) *minimum_baseline = -1;
+    if (natural_baseline) *natural_baseline = -1;
 }
 
 static void
 calf_meter_scale_class_init (CalfMeterScaleClass *klass)
 {
     GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
-    widget_class->expose_event = calf_meter_scale_expose;
-    widget_class->size_request = calf_meter_scale_size_request;
+    widget_class->snapshot     = calf_meter_scale_snapshot;
+    widget_class->measure      = calf_meter_scale_measure;
 }
 
 static void
 calf_meter_scale_init (CalfMeterScale *self)
 {
     GtkWidget *widget = GTK_WIDGET(self);
-    gtk_widget_set_has_window(widget, FALSE);
-    widget->requisition.width = 40;
-    widget->requisition.height = 12;
+    gtk_widget_set_size_request(widget, 40, 12);
     self->mode     = VU_STANDARD;
     self->position = 0;
     self->dots     = 0;
@@ -195,7 +198,7 @@ calf_meter_scale_get_type (void)
         };
 
         for (int i = 0; ; i++) {
-            //char *name = g_strdup_printf("CalfMeterScale%u%d", 
+            //char *name = g_strdup_printf("CalfMeterScale%u%d",
                 //((unsigned int)(intptr_t)calf_meter_scale_class_init) >> 16, i);
             const char *name = "CalfMeterScale";
             if (g_type_from_name(name)) {

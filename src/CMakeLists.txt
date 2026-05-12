@@ -57,6 +57,7 @@ endif()
 if(USE_GUI)
 	add_library(${PROJECT_NAME}gui STATIC ctl_curve.cpp ctl_keyboard.cpp ctl_knob.cpp ctl_led.cpp ctl_tube.cpp ctl_vumeter.cpp ctl_frame.cpp ctl_fader.cpp ctl_buttons.cpp ctl_notebook.cpp ctl_meterscale.cpp ctl_combobox.cpp ctl_tuner.cpp ctl_phasegraph.cpp ctl_pattern.cpp gui.cpp gui_config.cpp gui_controls.cpp osctl.cpp plugin_gui_window.cpp preset_gui.cpp utils.cpp ctl_linegraph.cpp drawingutils.cpp)
     target_include_directories(${PROJECT_NAME}gui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_compile_options(${PROJECT_NAME}gui PRIVATE -Wno-c++11-narrowing)
     target_link_libraries(${PROJECT_NAME}gui PRIVATE Threads::Threads ${GTK_LIBRARIES} fluidsynth)
 endif()
 

@@ -1376,7 +1376,7 @@ bool vocoder_audio_module::get_graph(int index, int subindex, int phase, float *
             if (!drawn && freq > bandfreq[subindex]) {
                 drawn = 1;
                 char str[32];
-                sprintf(str, "%d", subindex + 1);
+                snprintf(str, sizeof(str), "%d", subindex + 1);
                 draw_cairo_label(context, str, i, context->size_y * (1 - (data[i] + 1) / 2.f), 0, 0, 0.5);
             }
         }

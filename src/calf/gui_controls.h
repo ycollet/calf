@@ -66,6 +66,7 @@ struct table_container: public control_base
 struct alignment_container: public control_base
 {
     virtual GtkWidget *create(plugin_gui *_gui);
+    virtual void add(control_base *base);
 };
 
 struct frame_container: public control_base
@@ -158,7 +159,7 @@ struct hscale_param_control: public param_control
     virtual GtkWidget *create(plugin_gui *_gui, int _param_no);
     virtual void get();
     virtual void set();
-    static void hscale_value_changed(GtkHScale *widget, gpointer value);
+    static void hscale_value_changed(GtkScale *widget, gpointer value);
     static gchar *hscale_format_value(GtkScale *widget, double arg1, gpointer value);
 };
 
@@ -168,7 +169,7 @@ struct vscale_param_control: public param_control
     virtual GtkWidget *create(plugin_gui *_gui, int _param_no);
     virtual void get();
     virtual void set();
-    static void vscale_value_changed(GtkHScale *widget, gpointer value);
+    static void vscale_value_changed(GtkScale *widget, gpointer value);
 };
 
 /// Spin button
@@ -211,7 +212,7 @@ struct tap_button_param_control: public param_control
     virtual void set();
     static void tap_button_stop_waiting(gpointer value);
     static gboolean tap_button_released(GtkWidget *widget, gpointer value);
-    static gboolean tap_button_pressed(GtkWidget *widget, GdkEventButton *event, gpointer value);
+    static gboolean tap_button_pressed(GtkGestureClick *gesture, gint n_press, gdouble x, gdouble y, gpointer value);
 };
 
 /// Radio button
@@ -223,7 +224,7 @@ struct radio_param_control: public param_control
     virtual void get();
     virtual void set();
     
-    static void radio_clicked(GtkRadioButton *widget, gpointer value);
+    static void radio_clicked(GtkCheckButton *widget, gpointer value);
 };
 
 /// Push button
@@ -239,18 +240,19 @@ struct button_param_control: public param_control
 /// Combo list box
 struct combo_box_param_control: public param_control, public send_updates_iface
 {
-    GtkListStore *lstore;
-    std::map<std::string, GtkTreeIter> key2pos;
+    GtkStringList *str_list;
+    std::vector<std::string> key_list;
+    std::map<std::string, int> key2pos;
     std::string last_list;
     std::string last_key;
     bool populating;
-    
+
     virtual GtkWidget *create(plugin_gui *_gui, int _param_no);
     virtual void get();
     virtual void set();
     virtual void send_status(const char *key, const char *value);
     void set_to_last_key();
-    static void combo_value_changed(GtkComboBox *widget, gpointer value);
+    static void combo_value_changed(GObject *obj, GParamSpec *pspec, gpointer value);
 };
 
 /// Line graph
@@ -351,7 +353,7 @@ struct entry_param_control: public param_control, public send_configure_iface
 /// File chooser button
 struct filechooser_param_control: public param_control, public send_configure_iface
 {
-    GtkFileChooserButton *filechooser;
+    GtkWidget *filechooser;
     
     virtual GtkWidget *create(plugin_gui *_gui, int _param_no);
     virtual void get() {}

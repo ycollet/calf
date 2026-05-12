@@ -75,9 +75,9 @@ public:
 
 public:
     virtual GtkWidget *create(plugin_gui *_gui) { return NULL; }
-    virtual bool is_container() { return GTK_IS_CONTAINER(widget); };
+    virtual bool is_container() { return widget != NULL; };
     virtual void set_visibilty(bool state);
-    virtual void add(control_base *ctl) { gtk_container_add(GTK_CONTAINER(widget), ctl->widget); }
+    virtual void add(control_base *ctl) { gtk_widget_set_parent(ctl->widget, widget); }
     /// called from created() to set all the properties
     virtual void set_std_properties();
     /// called after the control is created
@@ -125,13 +125,13 @@ public:
     virtual void on_idle() {}
     virtual ~param_control();
     virtual void do_popup_menu();
-    static gboolean on_button_press_event(GtkWidget *widget, GdkEventButton *event, void *user_data);
+    static gboolean on_button_press_event(GtkWidget *widget, void *event, void *user_data);
     static gboolean on_popup_menu(GtkWidget *widget, void *user_data);
     virtual void create_value_entry(GtkWidget *widget, int x, int y);
     virtual void destroy_value_entry();
-    static gboolean value_entry_action(GtkEntry *widget, GdkEvent *event, void *user_data);
-    static gboolean value_entry_unfocus(GtkWidget *widget, GdkEventFocus *event, void *user_data);
-    static gboolean value_entry_click(GtkWidget *widget, GdkEventButton *event, void *user_data);
+    static gboolean value_entry_action(GtkEntry *widget, void *event, void *user_data);
+    static gboolean value_entry_unfocus(GtkWidget *widget, void *event, void *user_data);
+    static gboolean value_entry_click(GtkWidget *widget, void *event, void *user_data);
 };
 
 
@@ -161,10 +161,10 @@ protected:
     };
     std::vector<automation_menu_entry *> automation_menu_callback_data;
 
-    static void on_automation_add(GtkWidget *widget, void *user_data);
-    static void on_automation_delete(GtkWidget *widget, void *user_data);
-    static void on_automation_set_lower(GtkWidget *widget, void *user_data);
-    static void on_automation_set_upper(GtkWidget *widget, void *user_data);
+    static void on_automation_add(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+    static void on_automation_delete(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+    static void on_automation_set_lower(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+    static void on_automation_set_upper(GSimpleAction *action, GVariant *parameter, gpointer user_data);
     void on_automation_set_lower_or_upper(automation_menu_entry *ame, bool is_upper);
 public:
     plugin_gui_widget *window;
@@ -318,7 +318,6 @@ struct main_window_owner_iface
 };
 
 struct window_state {
-    GdkScreen *screen;
     int x, y, width, height;
 };
 
@@ -356,13 +355,11 @@ public:
 class plugin_gui_window: public plugin_gui_widget
 {
 public:
-    GtkUIManager *ui_mgr;
-    GtkActionGroup *std_actions, *builtin_preset_actions, *user_preset_actions, *command_actions;
+    GMenu *menu_model;
+    GSimpleActionGroup *win_actions;
     calf_utils::config_notifier_iface *notifier;
     GtkWidget *leftBG, *rightBG;
     plugin_gui_window(gui_environment_iface *_env, main_window_iface *_main);
-    std::string make_gui_preset_list(GtkActionGroup *grp, bool builtin, char &ch);
-    std::string make_gui_command_list(GtkActionGroup *grp, const plugin_metadata_iface *metadata);
     void fill_gui_presets(bool builtin, char &ch);
     void create(plugin_ctl_iface *_plugin, const char *title, const char *effect);
     GtkWidget *decorate(GtkWidget *widget);
@@ -370,9 +367,9 @@ public:
     void close();
     virtual void on_config_change();
     ~plugin_gui_window();
-    static void about_action(GtkAction *action, plugin_gui_window *gui_win);
-    static void help_action(GtkAction *action, plugin_gui_window *gui_win);
-    static void store_preset_action(GtkAction *action, plugin_gui_window *gui_win);
+    static void about_action(GSimpleAction *action, GVariant *parameter, gpointer gui_win);
+    static void help_action(GSimpleAction *action, GVariant *parameter, gpointer gui_win);
+    static void store_preset_action(GSimpleAction *action, GVariant *parameter, gpointer gui_win);
 
 };
 
@@ -396,7 +393,7 @@ struct activate_command_params
     }
 };
 
-void activate_command(GtkAction *action, activate_command_params *params);
+void activate_command(GSimpleAction *action, GVariant *parameter, gpointer params);
 
 class cairo_impl: public calf_plugins::cairo_iface
 {

@@ -174,13 +174,13 @@ std::string human_readable(float value, uint32_t base, char *format)
     char buf[32];
     const char *suf[] = { "", "k", "m", "g", "t", "p", "e" };
     if (value == 0) {
-        sprintf(buf, format, 0.f, "");
+        snprintf(buf, sizeof(buf), format, 0.f, "");
         return string(buf);
     }
     double val = abs(value);
     int place = (int)(log(val) / log(base));
     double num = val / pow(base, place);
-    sprintf(buf, format, (float)((value > 0) - (value < 0)) * num, suf[place]);
+    snprintf(buf, sizeof(buf), format, (float)((value > 0) - (value < 0)) * num, suf[place]);
     return string(buf);
 }
 
@@ -463,25 +463,25 @@ std::string calf_plugins::frequency_crosshair_label(int x, int y, int sx, int sy
     float f = exp((float(x) / float(sx)) * log(1000)) * 20.0;
     float db = dsp::amp2dB(dB_grid_inv(-1 + (2 - float(y) / float(sy) * 2), res, ofs));
     dsp::note_desc desc = dsp::hz_to_note(f, 440);
-    sprintf(str, "%.2f Hz", f);
+    snprintf(str, sizeof(str), "%.2f Hz", f);
     if (dB) {
-        sprintf(tmp, "%s\n%.2f dB", str, db);
+        snprintf(tmp, sizeof(tmp), "%s\n%.2f dB", str, db);
         strcpy(str, tmp);
     }
     if (q) {
-        sprintf(tmp, "%s\nQ: %.3f", str, q);
+        snprintf(tmp, sizeof(tmp), "%s\nQ: %.3f", str, q);
         strcpy(str, tmp);
     }
     if (name) {
-        sprintf(tmp, "%s\nNote: %s%d", str, desc.name, desc.octave);
+        snprintf(tmp, sizeof(tmp), "%s\nNote: %s%d", str, desc.name, desc.octave);
         strcpy(str, tmp);
     }
     if (cents) {
-        sprintf(tmp, "%s\nCents: %+.2f", str, desc.cents);
+        snprintf(tmp, sizeof(tmp), "%s\nCents: %+.2f", str, desc.cents);
         strcpy(str, tmp);
     }
     if (note) {
-        sprintf(tmp, "%s\nMIDI: %d", str, desc.note);
+        snprintf(tmp, sizeof(tmp), "%s\nMIDI: %d", str, desc.note);
         strcpy(str, tmp);
     }
     return string(str);

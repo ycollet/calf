@@ -14,10 +14,10 @@
  *
  * You should have received a copy of the GNU Lesser General
  * Public License along with this program; if not, write to the
- * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301  USA
  */
- 
+
 #include <calf/gui_config.h>
 #include <calf/gui_controls.h>
 #include <calf/preset.h>
@@ -147,7 +147,7 @@ void plugin_gui::xml_element_start(const char *element, const char *attributes[]
         xam[attributes[0]] = attributes[1];
         attributes += 2;
     }
-    
+
     if (!strcmp(element, "if"))
     {
         if (!xam.count("cond") || xam["cond"].empty())
@@ -168,7 +168,7 @@ void plugin_gui::xml_element_start(const char *element, const char *attributes[]
     control_base *cc = create_widget_from_xml(element, attributes);
     if (cc == NULL)
         g_error("Unexpected element %s in GUI definition\n", element);
-    
+
     cc->attribs = xam;
     cc->create(this);
     stack.push_back(cc);
@@ -186,12 +186,12 @@ void plugin_gui::xml_element_end(void *data, const char *element)
 
     control_base *control = gui->stack.back();
     control->created();
-    
+
     gui->stack.pop_back();
     if (gui->stack.empty())
     {
         gui->top_container = control;
-        gtk_widget_show_all(control->widget);
+        gtk_widget_set_visible(control->widget, TRUE);
     }
     else
         gui->stack.back()->add(control);
@@ -205,14 +205,14 @@ GtkWidget *plugin_gui::create_from_xml(plugin_ctl_iface *_plugin, const char *xm
     plugin = _plugin;
     stack.clear();
     ignore_stack = 0;
-    
+
     param_name_map.clear();
     read_serials.clear();
     int size = plugin->get_metadata_iface()->get_param_count();
     read_serials.resize(size);
     for (int i = 0; i < size; i++)
         param_name_map[plugin->get_metadata_iface()->get_param_props(i)->short_name] = i;
-    
+
     XML_SetUserData(parser, this);
     XML_SetElementHandler(parser, xml_element_start, xml_element_end);
     XML_Status status = XML_Parse(parser, xml, strlen(xml), 1);
@@ -220,7 +220,7 @@ GtkWidget *plugin_gui::create_from_xml(plugin_ctl_iface *_plugin, const char *xm
     {
         g_error("Parse error: %s in XML", XML_ErrorString(XML_GetErrorCode(parser)));
     }
-    
+
     XML_ParserFree(parser);
     last_status_serial_no = plugin->send_status_updates(this, 0);
     return top_container->widget;
@@ -301,7 +301,7 @@ void plugin_gui::on_idle()
                 params[i]->set();
         }
         params[i]->on_idle();
-    }    
+    }
     last_status_serial_no = plugin->send_status_updates(this, last_status_serial_no);
     // XXXKF iterate over par2ctl, too...
 }
@@ -352,13 +352,13 @@ void plugin_gui::set_radio_group(int param, GSList *group)
     param_radio_groups[param] = group;
 }
 
-void plugin_gui::on_automation_add(GtkWidget *widget, void *user_data)
+void plugin_gui::on_automation_add(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     plugin_gui *self = (plugin_gui *)user_data;
     self->plugin->add_automation(self->context_menu_last_designator, automation_range(0, 1, self->context_menu_param_no));
 }
 
-void plugin_gui::on_automation_delete(GtkWidget *widget, void *user_data)
+void plugin_gui::on_automation_delete(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     automation_menu_entry *ame = (automation_menu_entry *)user_data;
     ame->gui->plugin->delete_automation(ame->source, ame->gui->context_menu_param_no);
@@ -368,7 +368,7 @@ void plugin_gui::on_automation_set_lower_or_upper(automation_menu_entry *ame, bo
 {
     const parameter_properties *props = plugin->get_metadata_iface()->get_param_props(context_menu_param_no);
     float mapped = props->to_01(plugin->get_param_value(context_menu_param_no));
-    
+
     automation_map mappings;
     plugin->get_automation(context_menu_param_no, mappings);
     automation_map::const_iterator i = mappings.find(ame->source);
@@ -381,13 +381,13 @@ void plugin_gui::on_automation_set_lower_or_upper(automation_menu_entry *ame, bo
     }
 }
 
-void plugin_gui::on_automation_set_lower(GtkWidget *widget, void *user_data)
+void plugin_gui::on_automation_set_lower(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     automation_menu_entry *ame = (automation_menu_entry *)user_data;
     ame->gui->on_automation_set_lower_or_upper(ame, false);
 }
 
-void plugin_gui::on_automation_set_upper(GtkWidget *widget, void *user_data)
+void plugin_gui::on_automation_set_upper(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     automation_menu_entry *ame = (automation_menu_entry *)user_data;
     ame->gui->on_automation_set_lower_or_upper(ame, true);
@@ -406,68 +406,91 @@ void plugin_gui::on_control_popup(param_control *ctl, int param_no)
     if (param_no == -1)
         return;
     context_menu_param_no = param_no;
-    GtkWidget *menu = gtk_menu_new();
-    
+
     multimap<uint32_t, automation_range> mappings;
     plugin->get_automation(param_no, mappings);
-    
     context_menu_last_designator = plugin->get_last_automation_source();
-    
-    GtkWidget *item;
+
+    GMenu *menu_model = g_menu_new();
+    GSimpleActionGroup *grp = g_simple_action_group_new();
+    int idx = 0;
+
     if (context_menu_last_designator != 0xFFFFFFFF)
     {
         stringstream ss;
-        ss << "_Bind to: Ch" << (1 + (context_menu_last_designator >> 8)) << ", CC#" << (context_menu_last_designator & 127);
-        item = gtk_menu_item_new_with_mnemonic(ss.str().c_str());
-        g_signal_connect(item, "activate", (GCallback)on_automation_add, this);
-        gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+        ss << "Bind to: Ch" << (1 + (context_menu_last_designator >> 8)) << ", CC#" << (context_menu_last_designator & 127);
+        GSimpleAction *a = g_simple_action_new("bind", NULL);
+        g_signal_connect(a, "activate", (GCallback)on_automation_add, this);
+        g_action_map_add_action(G_ACTION_MAP(grp), G_ACTION(a));
+        g_object_unref(a);
+        g_menu_append(menu_model, ss.str().c_str(), "popup.bind");
     }
     else
     {
-        item = gtk_menu_item_new_with_label("Send CC to automate");
-        gtk_widget_set_sensitive(item, FALSE);
-        gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+        GMenuItem *mi = g_menu_item_new("Send CC to automate", NULL);
+        g_menu_item_set_attribute(mi, "sensitive", "b", FALSE);
+        g_menu_append_item(menu_model, mi);
+        g_object_unref(mi);
     }
-    
-    for(multimap<uint32_t, automation_range>::const_iterator i = mappings.begin(); i != mappings.end(); ++i)
+
+    for (multimap<uint32_t, automation_range>::const_iterator i = mappings.begin(); i != mappings.end(); ++i)
     {
         automation_menu_entry *ame = new automation_menu_entry(this, i->first);
         automation_menu_callback_data.push_back(ame);
         stringstream ss;
         ss << "Mapping: Ch" << (1 + (i->first >> 8)) << ", CC#" << (i->first & 127);
-        item = gtk_menu_item_new_with_label(ss.str().c_str());
-        gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-        
-        GtkWidget *submenu = gtk_menu_new();        
-        gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), submenu);
-        
-        item = gtk_menu_item_new_with_mnemonic("_Delete");
-        g_signal_connect(item, "activate", (GCallback)on_automation_delete, ame);
-        gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 
-        item = gtk_menu_item_new_with_mnemonic("Set _lower limit");
-        g_signal_connect(item, "activate", (GCallback)on_automation_set_lower, ame);
-        gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
+        GMenu *sub = g_menu_new();
+        char aname[3][32];
+        snprintf(aname[0], 32, "del%d", idx);
+        snprintf(aname[1], 32, "lo%d", idx);
+        snprintf(aname[2], 32, "hi%d", idx);
 
-        item = gtk_menu_item_new_with_mnemonic("Set _upper limit");
-        g_signal_connect(item, "activate", (GCallback)on_automation_set_upper, ame);
-        gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
-        //g_signal_connect(item, "activate", (GCallback)on_automation_add, this);
-        
+        GSimpleAction *a_del = g_simple_action_new(aname[0], NULL);
+        g_signal_connect(a_del, "activate", (GCallback)on_automation_delete, ame);
+        g_action_map_add_action(G_ACTION_MAP(grp), G_ACTION(a_del));
+        g_object_unref(a_del);
+        g_menu_append(sub, "Delete", (std::string("popup.") + aname[0]).c_str());
+
+        GSimpleAction *a_lo = g_simple_action_new(aname[1], NULL);
+        g_signal_connect(a_lo, "activate", (GCallback)on_automation_set_lower, ame);
+        g_action_map_add_action(G_ACTION_MAP(grp), G_ACTION(a_lo));
+        g_object_unref(a_lo);
+        g_menu_append(sub, "Set lower limit", (std::string("popup.") + aname[1]).c_str());
+
+        GSimpleAction *a_hi = g_simple_action_new(aname[2], NULL);
+        g_signal_connect(a_hi, "activate", (GCallback)on_automation_set_upper, ame);
+        g_action_map_add_action(G_ACTION_MAP(grp), G_ACTION(a_hi));
+        g_object_unref(a_hi);
+        g_menu_append(sub, "Set upper limit", (std::string("popup.") + aname[2]).c_str());
+
+        GMenuItem *mi = g_menu_item_new_submenu(ss.str().c_str(), G_MENU_MODEL(sub));
+        g_menu_append_item(menu_model, mi);
+        g_object_unref(mi);
+        g_object_unref(sub);
+        idx++;
     }
-    
-    gtk_widget_show_all(menu);
-    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 3, gtk_get_current_event_time());
+
+    GtkWidget *popover = gtk_popover_menu_new_from_model(G_MENU_MODEL(menu_model));
+    gtk_widget_insert_action_group(ctl->widget, "popup", G_ACTION_GROUP(grp));
+    gtk_widget_set_parent(popover, ctl->widget);
+    gtk_popover_popup(GTK_POPOVER(popover));
+
+    g_object_unref(menu_model);
+    g_object_unref(grp);
 }
 
 void plugin_gui::destroy_child_widgets(GtkWidget *parent)
 {
-    if (parent && GTK_IS_CONTAINER(parent))
+    if (parent && GTK_IS_WIDGET(parent))
     {
-        GList *children = gtk_container_get_children(GTK_CONTAINER(parent));
-        for(GList *p = children; p; p = p->next)
-            gtk_widget_destroy(GTK_WIDGET(p->data));
-        g_list_free(children);
+        GtkWidget *child = gtk_widget_get_first_child(parent);
+        while (child)
+        {
+            GtkWidget *next = gtk_widget_get_next_sibling(child);
+            gtk_widget_unparent(child);
+            child = next;
+        }
     }
 }
 
@@ -481,14 +504,12 @@ plugin_gui::~plugin_gui()
 
 bool window_update_controller::check_redraw(GtkWidget *toplevel)
 {
-    GdkWindow *gdkwin = gtk_widget_get_window(toplevel);
-    if (!gdkwin)
+    GdkSurface *surface = gtk_native_get_surface(GTK_NATIVE(toplevel));
+    if (!surface)
         return false;
 
-    if (!gdk_window_is_viewable(gdkwin))
-        return false;
-    GdkWindowState state = gdk_window_get_state(gdkwin);
-    if (state & GDK_WINDOW_STATE_ICONIFIED)
+    GdkToplevelState state = gdk_toplevel_get_state(GDK_TOPLEVEL(surface));
+    if (state & GDK_TOPLEVEL_STATE_MINIMIZED)
     {
         ++refresh_counter;
         if (refresh_counter & 15)
@@ -504,7 +525,7 @@ gui_environment::gui_environment()
     keyfile = g_key_file_new();
 
     string filename;
-    
+
     gchar *fn_under_home = g_build_filename(getenv("HOME"), ".calfrc", NULL);
     char *xdg_conf = getenv("XDG_CONFIG_HOME");
     gchar *calf_conf_dir = g_build_filename(xdg_conf, "calf", NULL);
@@ -529,7 +550,7 @@ gui_environment::gui_environment()
     g_free(fn_under_home);
 
     g_key_file_load_from_file(keyfile, filename.c_str(), (GKeyFileFlags)(G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS), NULL);
-    
+
     config_db = new calf_utils::gkeyfile_config_db(keyfile, filename.c_str(), "gui");
     gui_config.load(config_db);
     images = image_factory();
@@ -576,43 +597,43 @@ gboolean image_factory::available (string image) {
 }
 image_factory::image_factory (string p) {
     set_path(p);
-    
+
     i["combo_arrow"]              = NULL;
     i["light_top"]                = NULL;
     i["light_bottom"]             = NULL;
     i["notebook_screw"]           = NULL;
     i["logo_button"]              = NULL;
-    
+
     i["knob_1"]                    = NULL;
     i["knob_2"]                    = NULL;
     i["knob_3"]                    = NULL;
     i["knob_4"]                    = NULL;
     i["knob_5"]                    = NULL;
-    
+
     i["side_d_ne"]                = NULL;
     i["side_d_nw"]                = NULL;
     i["side_d_se"]                = NULL;
     i["side_d_sw"]                = NULL;
-    
+
     i["side_ne"]                  = NULL;
     i["side_nw"]                  = NULL;
     i["side_se"]                  = NULL;
     i["side_sw"]                  = NULL;
     i["side_e_logo"]              = NULL;
-    
+
     i["slider_1_horiz"]            = NULL;
     i["slider_1_vert"]             = NULL;
     i["slider_2_horiz"]            = NULL;
     i["slider_2_vert"]             = NULL;
-    
+
     i["tap_active"]               = NULL;
     i["tap_inactive"]             = NULL;
     i["tap_prelight"]             = NULL;
-    
+
     i["toggle_0"]                 = NULL;
     i["toggle_1"]                 = NULL;
     i["toggle_2"]                 = NULL;
-    
+
     i["toggle_2_block"]           = NULL;
     i["toggle_2_bypass"]          = NULL;
     i["toggle_2_bypass2"]         = NULL;
@@ -635,5 +656,5 @@ image_factory::image_factory (string p) {
     i["toggle_2_pauseplay"]       = NULL;
 }
 image_factory::~image_factory() {
-    
+
 }

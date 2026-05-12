@@ -42,6 +42,7 @@ struct CalfKnob
     int type;
     int size;
     double start_x, start_y, last_y, start_value, default_value;
+    gboolean drag_active;
     std::vector<double> ticks;
     GdkPixbuf *knob_image;
 };

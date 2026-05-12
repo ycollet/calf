@@ -44,6 +44,7 @@ G_BEGIN_DECLS
 #define CALF_IS_FRAME(obj)       (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CALF_TYPE_FRAME))
 #define CALF_FRAME_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST ((klass),  CALF_TYPE_FRAME, CalfFrameClass))
 #define CALF_IS_FRAME_CLASS(obj) (G_TYPE_CHECK_CLASS_TYPE ((klass),  CALF_TYPE_FRAME))
+#define CALF_FRAME_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), CALF_TYPE_FRAME, CalfFrameClass))
 
 struct CalfFrame
 {

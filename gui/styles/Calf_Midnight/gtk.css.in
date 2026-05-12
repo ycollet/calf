@@ -1,0 +1,95 @@
+/* Calf Midnight */
+
+@define-color bg #2b2b2b;
+@define-color base #000f17;
+@define-color text #ffffff;
+
+* {
+  font-family: Sans;
+  font-size: 8pt;
+  color: #ffffff;
+}
+
+.Calf-Rack {
+  background-image: url("@guidatadir@/background.png");
+  background-repeat: repeat;
+}
+
+.Calf-Rack-Title {
+  color: #ffffff;
+  font-family: "Open Sans Condensed";
+  font-size: 11pt;
+}
+
+.Calf-Rack-Entry {
+  font-family: "Open Sans Condensed";
+  font-size: 11pt;
+  background-color: #000000;
+  color: #d1ea73;
+}
+
+.Calf-Label {
+  color: #ffffff;
+  font-size: 7pt;
+}
+
+.CalfMainLeft {
+  background-image: url("@guidatadir@/side_d_w.png");
+  background-repeat: no-repeat;
+}
+.CalfMainRight {
+  background-image: url("@guidatadir@/side_d_e.png");
+  background-repeat: no-repeat;
+}
+
+.Calf-Plugin {
+  background-image: url("@guidatadir@/background.png");
+  background-repeat: repeat;
+}
+.CalfPluginLeft {
+  background-image: url("@guidatadir@/side_w.png");
+  background-repeat: no-repeat;
+}
+.CalfPluginRight {
+  background-image: url("@guidatadir@/side_e.png");
+  background-repeat: no-repeat;
+}
+
+.Calf-Menu {
+  color: #dddddd;
+  background-color: #111111;
+  font-size: 8pt;
+}
+.Calf-Menu:selected {
+  color: #ffffff;
+  background-color: #333333;
+}
+
+entry.Calf-Rack-Entry {
+  background-color: #000000;
+  color: #d1ea73;
+}
+
+.calf-button {
+  font-size: 8pt;
+  background-color: #333333;
+  color: #ffffff;
+}
+.calf-button:hover { background-color: #404040; }
+.calf-button:active { background-color: #1a1a1a; }
+
+.calf-toggle-button {
+  font-size: 8pt;
+  background-color: #333333;
+  color: #ffffff;
+}
+
+.calf-combobox {
+  font-size: 8pt;
+  background-color: #2b2b2b;
+  color: #000000;
+}
+
+.notebook {
+  color: #ffffff;
+}

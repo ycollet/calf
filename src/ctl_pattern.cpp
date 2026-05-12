@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU Lesser General
  * Public License along with this program; if not, write to the
- * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301  USA
  */
 
@@ -38,18 +38,18 @@ using namespace calf_plugins;
 static GdkRectangle calf_pattern_handle_rect (CalfPattern *p, int bar, int beat, double value)
 {
     g_assert(CALF_IS_PATTERN(p));
-    
+
     float top    = round(p->pad_y + p->border_v + p->mbars);
     float bottom = round(top + p->beat_height);
     float height = round(p->beat_height * value);
     float max    = bottom - height;
-    
+
     // move to bars left edge
     float x = p->pad_x + p->border_h + p->mbars + bar * p->bar_width;
     // move to beats left edge
     x += (p->beat_width + p->minner) * beat;
     x = floor(x);
-    
+
     GdkRectangle rect;
     rect.x = (int)x;
     rect.y = (int)max;
@@ -62,45 +62,45 @@ static void calf_pattern_draw_background (GtkWidget *wi, cairo_t *cr)
 {
     g_assert(CALF_IS_PATTERN(wi));
     CalfPattern *p = CALF_PATTERN(wi);
-    
+
     cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 8);
-    
+
     cairo_text_extents_t tx, tx2;
     cairo_text_extents(cr, "Beats", &tx);
-    
+
     p->border_h = tx.width + p->border;
     p->border_v = tx.height + p->border;
     p->bar_width = (p->size_x - p->border_h - p->mbars) / p->bars;
     p->beat_width = floor((p->bar_width - p->mbars - (p->beats - 1) * p->minner) / p->beats);
     p->beat_height = p->size_y - 2 * p->border_v - 2 * p->mbars;
-    
+
     float r, g, b;
     get_text_color(wi, NULL, &r, &g, &b);
     cairo_set_source_rgb(cr, r, g, b);
-    
+
     float _x = p->pad_x + p->border;
     float _y = p->pad_y + p->border - tx.y_bearing;
-    
+
     //cairo_move_to(cr, _x, _y);
     //cairo_show_text(cr, "Bars");
-    
+
     //cairo_move_to(cr, _x, p->height - p->pad_y - p->border + tx.height + tx.y_bearing);
     //cairo_show_text(cr, "Beats");
-    
+
     cairo_move_to(cr, _x, _y + p->border + tx.height + p->mbars);
-    cairo_show_text(cr, "100%"); 
-    
+    cairo_show_text(cr, "100%");
+
     cairo_move_to(cr, _x, p->height / 2 - tx.height / 2 - tx.y_bearing);
-    cairo_show_text(cr, "50%"); 
-    
+    cairo_show_text(cr, "50%");
+
     cairo_move_to(cr, _x, p->height - p->pad_y - p->border * 2 - tx.height * 2 - tx.y_bearing - p->mbars);
     cairo_show_text(cr, "0%");
-    
+
     for (int i = 0; i < p->bars; i++) {
         _x = p->pad_x + p->border_h + p->mbars + i * p->bar_width;
         char num[4];
-        sprintf(num, "%d", i + 1);
+        snprintf(num, sizeof(num), "%d", i + 1);
         cairo_set_font_size(cr, 8);
         cairo_text_extents(cr, num, &tx2);
         get_text_color(wi, NULL, &r, &g, &b);
@@ -111,7 +111,7 @@ static void calf_pattern_draw_background (GtkWidget *wi, cairo_t *cr)
             calf_pattern_draw_handle(wi, cr, i, j, 0, 0, 1, 0.1, false);
             get_text_color(wi, NULL, &r, &g, &b);
             cairo_set_source_rgb(cr, r, g, b);
-            sprintf(num, "%d", j + 1);
+            snprintf(num, sizeof(num), "%d", j + 1);
             cairo_set_font_size(cr, p->bars * p->beats * 7 > p->width ? 7 : 8);
             cairo_text_extents(cr, num, &tx2);
             cairo_move_to(cr, _x + (p->beat_width + p->minner) * j + p->beat_width / 2 - tx2.width / 2 - 1,
@@ -125,12 +125,12 @@ void calf_pattern_draw_handle (GtkWidget *wi, cairo_t *cr, int bar, int beat, in
 {
     g_assert(CALF_IS_PATTERN(wi));
     CalfPattern *p = CALF_PATTERN(wi);
-    
+
     GdkRectangle rect = calf_pattern_handle_rect(p, bar, beat, value);
     // move to lower edge
     int bottom = y + rect.y + rect.height;
     int _y = bottom;
-    
+
     int c = 0;
     float r, g, b;
     get_fg_color(wi, NULL, &r, &g, &b);
@@ -144,23 +144,28 @@ void calf_pattern_draw_handle (GtkWidget *wi, cairo_t *cr, int bar, int beat, in
     }
 }
 
-static gboolean
-calf_pattern_expose (GtkWidget *widget, GdkEventExpose *event)
+static void
+calf_pattern_snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
 {
     g_assert(CALF_IS_PATTERN(widget));
     CalfPattern *p = CALF_PATTERN(widget);
-    cairo_t *c = gdk_cairo_create(GDK_DRAWABLE(widget->window));
+
+    int width  = gtk_widget_get_width(widget);
+    int height = gtk_widget_get_height(widget);
+
+    graphene_rect_t bounds = GRAPHENE_RECT_INIT(0, 0, width, height);
+    cairo_t *c = gtk_snapshot_append_cairo(snapshot, &bounds);
+
     if (p->force_redraw) {
-        p->pad_x  = widget->style->xthickness;
-        p->pad_y  = widget->style->ythickness;
-        p->x      = widget->allocation.x;
-        p->y      = widget->allocation.y;
-        p->width  = widget->allocation.width;
-        p->height = widget->allocation.height;
-        p->size_x = p->width - 2 * p->pad_x;
+        p->pad_x  = 1; /* hardcoded xthickness */
+        p->pad_y  = 1; /* hardcoded ythickness */
+        p->x      = 0;
+        p->y      = 0;
+        p->width  = width;
+        p->height = height;
+        p->size_x = p->width  - 2 * p->pad_x;
         p->size_y = p->height - 2 * p->pad_y;
-        float radius, bevel, shadow, lights, dull;
-        gtk_widget_style_get(widget, "border-radius", &radius, "bevel",  &bevel, "shadow", &shadow, "lights", &lights, "dull", &dull, NULL);
+        float radius = 4.f, bevel = 0.2f, shadow = 4.f, lights = 1.f, dull = 0.25f;
         cairo_t *bg = cairo_create(p->background_surface);
         display_background(widget, bg, 0, 0, p->size_x, p->size_y, p->pad_x, p->pad_y, radius, bevel, 1, shadow, lights, dull);
         calf_pattern_draw_background(widget, bg);
@@ -168,11 +173,11 @@ calf_pattern_expose (GtkWidget *widget, GdkEventExpose *event)
     }
     cairo_rectangle(c, p->x, p->y, p->width, p->height);
     cairo_clip(c);
-    
+
     cairo_rectangle(c, p->x, p->y, p->width, p->height);
     cairo_set_source_surface(c, p->background_surface, p->x, p->y);
     cairo_fill(c);
-    
+
     for (int i = 0; i < p->bars; i ++) {
         for (int j = 0; j < p->beats; j++) {
             if  ((p->handle_grabbed.bar == i  and p->handle_grabbed.beat == j)
@@ -182,7 +187,7 @@ calf_pattern_expose (GtkWidget *widget, GdkEventExpose *event)
             }
         }
     }
-    
+
     for (int i = 0; i < p->bars; i++) {
         for (int j = 0; j < p->beats; j++) {
             double val = p->values[i][j];
@@ -190,10 +195,9 @@ calf_pattern_expose (GtkWidget *widget, GdkEventExpose *event)
                 calf_pattern_draw_handle(widget, c, i, j, p->x, p->y, val, 0.8);
         }
     }
-    
+
     p->force_redraw = false;
     cairo_destroy(c);
-    return TRUE;
 }
 
 static calf_pattern_handle
@@ -231,55 +235,52 @@ calf_pattern_get_value_from_y(CalfPattern *p, double y)
     return 1 - std::max(0., std::min(1., _y));
 }
 
-static gboolean
-calf_pattern_pointer_motion (GtkWidget *widget, GdkEventMotion *event)
+static void
+calf_pattern_motion (GtkEventControllerMotion *controller,
+                     double ex, double ey, gpointer data)
 {
+    GtkWidget *widget = GTK_WIDGET(data);
     g_assert(CALF_IS_PATTERN(widget));
     CalfPattern *p = CALF_PATTERN(widget);
-   
+
     if (p->handle_grabbed.bar >= 0 and p->handle_grabbed.beat >= 0) {
         // handle grabbed
         double val = p->values[p->handle_grabbed.bar][p->handle_grabbed.beat];
-        double new_value = calf_pattern_get_drag_value(p, event->y, val);
+        double new_value = calf_pattern_get_drag_value(p, ey, val);
         p->values[p->handle_grabbed.bar][p->handle_grabbed.beat] = new_value;
-        p->mouse_x = event->x;
-        p->mouse_y = event->y;
+        p->mouse_x = ex;
+        p->mouse_y = ey;
         g_signal_emit_by_name(widget, "handle-changed", &p->handle_grabbed);
         gtk_widget_queue_draw(widget);
     } else {
         // no handle grabbed
-        calf_pattern_handle hh = calf_pattern_get_handle_at(p, event->x, event->y);
+        calf_pattern_handle hh = calf_pattern_get_handle_at(p, ex, ey);
         if (hh.bar != p->handle_hovered.bar or hh.beat != p->handle_hovered.beat) {
             if (hh.bar >= 0 and hh.beat >= 0) {
-                //gdk_window_set_cursor(widget->window, p->hand_cursor);
                 p->handle_hovered.bar  = hh.bar;
                 p->handle_hovered.beat = hh.beat;
             } else {
-                //gdk_window_set_cursor(widget->window, NULL);
                 p->handle_hovered.bar  = -1;
                 p->handle_hovered.beat = -1;
             }
             gtk_widget_queue_draw(widget);
         }
     }
-    if (event->is_hint) {
-        gdk_event_request_motions(event);
-    }
-    
-    return TRUE;
 }
 
-static gboolean
-calf_pattern_button_press (GtkWidget *widget, GdkEventButton *event)
+static void
+calf_pattern_gesture_pressed (GtkGestureClick *gesture, int n_press,
+                               double ex, double ey, gpointer data)
 {
+    GtkWidget *widget = GTK_WIDGET(data);
     g_assert(CALF_IS_PATTERN(widget));
     CalfPattern *p = CALF_PATTERN(widget);
     bool inside_handle = false;
-    
-    p->mouse_x = event->x;
-    p->mouse_y = event->y;
 
-    calf_pattern_handle h = calf_pattern_get_handle_at(p, event->x, event->y);
+    p->mouse_x = ex;
+    p->mouse_y = ey;
+
+    calf_pattern_handle h = calf_pattern_get_handle_at(p, ex, ey);
     if (h.bar >= 0 and h.beat >= 0) {
         p->handle_grabbed.bar  = h.bar;
         p->handle_grabbed.beat = h.beat;
@@ -287,8 +288,8 @@ calf_pattern_button_press (GtkWidget *widget, GdkEventButton *event)
     }
     double val = p->values[p->handle_grabbed.bar][p->handle_grabbed.beat];
     p->startval = val;
-    
-    if (inside_handle && event->type == GDK_2BUTTON_PRESS) {
+
+    if (inside_handle && n_press == 2) {
         // double click
         p->values[p->handle_grabbed.bar][p->handle_grabbed.beat] = val < 0.5 ? 1 : 0;
         g_signal_emit_by_name(widget, "handle-changed", &p->handle_grabbed);
@@ -298,26 +299,26 @@ calf_pattern_button_press (GtkWidget *widget, GdkEventButton *event)
         p->handle_grabbed.beat = -1;
         p->dblclick = true;
     }
-    
+
     gtk_widget_grab_focus(widget);
-    gtk_grab_add(widget);
     gtk_widget_queue_draw(widget);
-    return TRUE;
 }
 
-static gboolean
-calf_pattern_button_release (GtkWidget *widget, GdkEventButton *event)
+static void
+calf_pattern_gesture_released (GtkGestureClick *gesture, int n_press,
+                                double ex, double ey, gpointer data)
 {
+    GtkWidget *widget = GTK_WIDGET(data);
     g_assert(CALF_IS_PATTERN(widget));
     CalfPattern *p = CALF_PATTERN(widget);
     calf_pattern_handle h = p->handle_grabbed;
     if (h.bar < 0 or h.beat < 0)
-        return FALSE;
-        
+        return;
+
     double val = p->values[h.bar][h.beat];
     if (!p->dblclick and abs(p->startval - val) < 0.05) {
         // single click
-        val = calf_pattern_get_value_from_y(p, event->y);
+        val = calf_pattern_get_value_from_y(p, ey);
         p->values[h.bar][h.beat] = val;
         g_signal_emit_by_name(widget, "handle-changed", &p->handle_grabbed);
     }
@@ -326,35 +327,34 @@ calf_pattern_button_release (GtkWidget *widget, GdkEventButton *event)
     p->mouse_y             = -1;
     p->handle_grabbed.bar  = -1;
     p->handle_grabbed.beat = -1;
-    
-    calf_pattern_handle hh = calf_pattern_get_handle_at(p, event->x, event->y);
+
+    calf_pattern_handle hh = calf_pattern_get_handle_at(p, ex, ey);
     if (hh.bar >= 0 and hh.beat >= 0) {
         p->handle_hovered.bar  = hh.bar;
         p->handle_hovered.beat = hh.beat;
     }
-        
-    if (GTK_WIDGET_HAS_GRAB(widget))
-        gtk_grab_remove(widget);
-        
+
     gtk_widget_queue_draw(widget);
-    return TRUE;
 }
 
 static gboolean
-calf_pattern_scroll (GtkWidget *widget, GdkEventScroll *event)
+calf_pattern_scroll (GtkEventControllerScroll *controller,
+                     double dx, double dy, gpointer data)
 {
+    GtkWidget *widget = GTK_WIDGET(data);
     g_assert(CALF_IS_PATTERN(widget));
     CalfPattern *p = CALF_PATTERN(widget);
 
-    calf_pattern_handle h = calf_pattern_get_handle_at(p, event->x, event->y);
-    //printf("%d %d\n", h.bar, h.beat);
+    /* Obtain pointer position from the controller's widget */
+    double ex = p->mouse_x, ey = p->mouse_y;
+    calf_pattern_handle h = calf_pattern_get_handle_at(p, ex, ey);
     if (h.bar >= 0 and h.beat >= 0) {
-        if (event->direction == GDK_SCROLL_UP) {
-            // raise handle value
+        if (dy < 0) {
+            // scroll up — raise handle value
             p->values[h.bar][h.beat] = std::min(1., p->values[h.bar][h.beat] + 0.1);
             g_signal_emit_by_name(widget, "handle-changed", &h);
-        } else if (event->direction == GDK_SCROLL_DOWN) {
-            //lower handle value
+        } else if (dy > 0) {
+            // scroll down — lower handle value
             p->values[h.bar][h.beat] = std::max(0., p->values[h.bar][h.beat] - 0.1);
             g_signal_emit_by_name(widget, "handle-changed", &h);
         }
@@ -363,76 +363,59 @@ calf_pattern_scroll (GtkWidget *widget, GdkEventScroll *event)
     return TRUE;
 }
 
-static gboolean
-calf_pattern_leave (GtkWidget *widget, GdkEventCrossing *event)
+static void
+calf_pattern_leave (GtkEventControllerMotion *controller, gpointer data)
 {
+    GtkWidget *widget = GTK_WIDGET(data);
     g_assert(CALF_IS_PATTERN(widget));
     CalfPattern *p = CALF_PATTERN(widget);
     p->handle_hovered.bar  = -1;
     p->handle_hovered.beat = -1;
-    //gdk_window_set_cursor(widget->window, NULL);
     gtk_widget_queue_draw(widget);
-    return TRUE;
 }
 
 static void
-calf_pattern_size_request (GtkWidget *widget,
-                           GtkRequisition *requisition)
+calf_pattern_measure (GtkWidget *widget,
+                      GtkOrientation orientation,
+                      int for_size,
+                      int *minimum, int *natural,
+                      int *minimum_baseline, int *natural_baseline)
 {
     g_assert(CALF_IS_PATTERN(widget));
+    if (orientation == GTK_ORIENTATION_HORIZONTAL) {
+        *minimum = *natural = 300;
+    } else {
+        *minimum = *natural = 60;
+    }
+    *minimum_baseline = *natural_baseline = -1;
 }
 
 static void
-calf_pattern_size_allocate (GtkWidget *widget,
-                           GtkAllocation *allocation)
+calf_pattern_size_allocate (GtkWidget *widget, int width, int height, int baseline)
 {
     g_assert(CALF_IS_PATTERN(widget));
     CalfPattern *p = CALF_PATTERN(widget);
-    //GtkWidgetClass *parent_class = (GtkWidgetClass *) g_type_class_peek_parent( CALF_PATTERN_GET_CLASS( p ) );
-    //GtkAllocation &a = widget->allocation;
-    int sx = allocation->width  - p->pad_x * 2;
-    int sy = allocation->height - p->pad_y * 2;
-    if (sx != p->size_x or sy != p->size_y) {
+    int sx = width  - (int)(p->pad_x * 2);
+    int sy = height - (int)(p->pad_y * 2);
+    if (sx != (int)p->size_x or sy != (int)p->size_y) {
         p->size_x = sx;
         p->size_y = sy;
         if (p->background_surface)
             cairo_surface_destroy( p->background_surface );
         p->background_surface = cairo_image_surface_create(
-            CAIRO_FORMAT_ARGB32, allocation->width, allocation->height );
+            CAIRO_FORMAT_ARGB32, width, height );
         p->force_redraw = true;
     }
-    widget->allocation = *allocation;
 }
 
 static void
 calf_pattern_class_init (CalfPatternClass *klass)
 {
-    // GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
     GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
-    widget_class->expose_event = calf_pattern_expose;
-    widget_class->button_press_event = calf_pattern_button_press;
-    widget_class->button_release_event = calf_pattern_button_release;
-    widget_class->motion_notify_event = calf_pattern_pointer_motion;
-    widget_class->scroll_event = calf_pattern_scroll;
-    widget_class->leave_notify_event = calf_pattern_leave;
+    widget_class->snapshot      = calf_pattern_snapshot;
+    widget_class->measure       = calf_pattern_measure;
     widget_class->size_allocate = calf_pattern_size_allocate;
-    widget_class->size_request = calf_pattern_size_request;
-    gtk_widget_class_install_style_property(
-        widget_class, g_param_spec_float("border-radius", "Border Radius", "Generate round edges",
-        0, 24, 4, GParamFlags(G_PARAM_READWRITE)));
-    gtk_widget_class_install_style_property(
-        widget_class, g_param_spec_float("bevel", "Bevel", "Bevel the object",
-        -2, 2, 0.2, GParamFlags(G_PARAM_READWRITE)));
-    gtk_widget_class_install_style_property(
-        widget_class, g_param_spec_float("shadow", "Shadow", "Draw shadows inside",
-        0, 16, 4, GParamFlags(G_PARAM_READWRITE)));
-    gtk_widget_class_install_style_property(
-        widget_class, g_param_spec_float("lights", "Lights", "Draw lights inside",
-        0, 1, 1, GParamFlags(G_PARAM_READWRITE)));
-    gtk_widget_class_install_style_property(
-        widget_class, g_param_spec_float("dull", "Dull", "Draw dull inside",
-        0, 1, 0.25, GParamFlags(G_PARAM_READWRITE)));
-        
+
     g_signal_new("handle-changed",
          G_TYPE_OBJECT, G_SIGNAL_RUN_FIRST,
          0, NULL, NULL,
@@ -450,29 +433,43 @@ static void
 calf_pattern_init (CalfPattern *p)
 {
     GtkWidget *widget = GTK_WIDGET(p);
-    
-    GTK_WIDGET_SET_FLAGS (widget, GTK_CAN_FOCUS | GTK_SENSITIVE | GTK_PARENT_SENSITIVE);
-    gtk_widget_add_events(widget, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK);
-    
-    widget->requisition.width  = 300;
-    widget->requisition.height = 60;
-    p->pad_x                = widget->style->xthickness;
-    p->pad_y                = widget->style->ythickness;
-    p->force_redraw         = false;
-    p->beats                = 1;
-    p->bars                 = 1;
-    p->hand_cursor          = gdk_cursor_new(GDK_DOUBLE_ARROW);
-    
-    g_signal_connect(GTK_OBJECT(widget), "unrealize", G_CALLBACK(calf_pattern_unrealize), (gpointer)p);
-    
+
+    gtk_widget_set_focusable(widget, TRUE);
+    gtk_widget_set_size_request(widget, 300, 60);
+
+    p->pad_x         = 1; /* hardcoded xthickness */
+    p->pad_y         = 1; /* hardcoded ythickness */
+    p->force_redraw  = false;
+    p->beats         = 1;
+    p->bars          = 1;
+
+    g_signal_connect(G_OBJECT(widget), "unrealize", G_CALLBACK(calf_pattern_unrealize), (gpointer)p);
+
     p->handle_hovered.bar  = -1;
     p->handle_hovered.beat = -1;
     p->handle_grabbed.bar  = -1;
     p->handle_grabbed.beat = -1;
-    
+
     p->background_surface = NULL;
-    
-    gtk_event_box_set_visible_window(GTK_EVENT_BOX(widget), FALSE);
+
+    /* Click gesture */
+    GtkGestureClick *click = GTK_GESTURE_CLICK(gtk_gesture_click_new());
+    gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(click), 0); /* all buttons */
+    g_signal_connect(click, "pressed",  G_CALLBACK(calf_pattern_gesture_pressed),  widget);
+    g_signal_connect(click, "released", G_CALLBACK(calf_pattern_gesture_released), widget);
+    gtk_widget_add_controller(widget, GTK_EVENT_CONTROLLER(click));
+
+    /* Motion + leave controllers */
+    GtkEventControllerMotion *motion = GTK_EVENT_CONTROLLER_MOTION(gtk_event_controller_motion_new());
+    g_signal_connect(motion, "motion", G_CALLBACK(calf_pattern_motion), widget);
+    g_signal_connect(motion, "leave",  G_CALLBACK(calf_pattern_leave),  widget);
+    gtk_widget_add_controller(widget, GTK_EVENT_CONTROLLER(motion));
+
+    /* Scroll controller */
+    GtkEventControllerScroll *scroll = GTK_EVENT_CONTROLLER_SCROLL(
+        gtk_event_controller_scroll_new(GTK_EVENT_CONTROLLER_SCROLL_VERTICAL));
+    g_signal_connect(scroll, "scroll", G_CALLBACK(calf_pattern_scroll), widget);
+    gtk_widget_add_controller(widget, GTK_EVENT_CONTROLLER(scroll));
 }
 
 GtkWidget *
@@ -507,7 +504,7 @@ calf_pattern_get_type (void)
                 //free(name);
                 continue;
             }
-            type = g_type_register_static( GTK_TYPE_EVENT_BOX,
+            type = g_type_register_static( GTK_TYPE_WIDGET,
                                            name,
                                            type_info_copy,
                                            (GTypeFlags)0);

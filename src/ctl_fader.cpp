@@ -15,14 +15,39 @@
  *
  * You should have received a copy of the GNU Lesser General
  * Public License along with this program; if not, write to the
- * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301  USA
  */
- 
+
 #include <calf/ctl_fader.h>
 
 using namespace calf_plugins;
 using namespace dsp;
+
+static void calf_cairo_set_source_pixbuf(cairo_t *cr, GdkPixbuf *pb, double px, double py)
+{
+    int w          = gdk_pixbuf_get_width(pb);
+    int h          = gdk_pixbuf_get_height(pb);
+    int nc         = gdk_pixbuf_get_n_channels(pb);
+    int src_stride = gdk_pixbuf_get_rowstride(pb);
+    const guchar *src = gdk_pixbuf_get_pixels(pb);
+    cairo_surface_t *surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, w, h);
+    guchar *dst       = cairo_image_surface_get_data(surf);
+    int dst_stride    = cairo_image_surface_get_stride(surf);
+    for (int row = 0; row < h; row++) {
+        const guchar *s = src + row * src_stride;
+        guint32 *d = (guint32 *)(dst + row * dst_stride);
+        for (int col = 0; col < w; col++, s += nc) {
+            guint8 r = s[0], g = s[1], b = s[2];
+            guint8 a = (nc == 4) ? s[3] : 255u;
+            *d++ = ((guint32)a << 24) | ((guint32)(r * a / 255) << 16)
+                 | ((guint32)(g * a / 255) << 8)  |  (guint32)(b * a / 255);
+        }
+    }
+    cairo_surface_mark_dirty(surf);
+    cairo_set_source_surface(cr, surf, px, py);
+    cairo_surface_destroy(surf);
+}
 
 
 ///////////////////////////////////////// fader ///////////////////////////////////////////////
@@ -35,24 +60,23 @@ void calf_fader_set_layout(GtkWidget *widget)
     CalfFaderLayout l = fader->layout;
     GdkRectangle t;
     gint sstart, send;
-    
+
     gtk_range_get_range_rect(range, &t);
     gtk_range_get_slider_range(range, &sstart, &send);
-    
+
     int hor = fader->horizontal;
-    int slength;
-    gtk_widget_style_get(widget, "slider-length", &slength, NULL);
-    
+    int slength = 17;
+
     // widget layout
-    l.x = widget->allocation.x + t.x;
-    l.y = widget->allocation.y + t.y;
-    l.w = t.width; //widget->allocation.width;
-    l.h = t.height; //widget->allocation.height;
-    
+    l.x = t.x;
+    l.y = t.y;
+    l.w = t.width;
+    l.h = t.height;
+
     // image layout
     l.iw = gdk_pixbuf_get_width(fader->image);
     l.ih = gdk_pixbuf_get_height(fader->image);
-    
+
     // first screw layout
     l.s1w  = hor  ? slength : gdk_pixbuf_get_width(fader->image);
     l.s1h  = !hor ? slength : gdk_pixbuf_get_height(fader->image);
@@ -60,27 +84,27 @@ void calf_fader_set_layout(GtkWidget *widget)
     l.s1y1 = 0;
     l.s1x2 = l.x;
     l.s1y2 = l.y;
-    
+
     // second screw layout
     l.s2w  = l.s1w;
     l.s2h  = l.s1h;
-    l.s2x1 = hor  ? l.iw - 3 * l.s2w : 0; 
-    l.s2y1 = !hor ? l.ih - 3 * l.s2h : 0; 
+    l.s2x1 = hor  ? l.iw - 3 * l.s2w : 0;
+    l.s2y1 = !hor ? l.ih - 3 * l.s2h : 0;
     l.s2x2 = hor  ? l.w - l.s2w + l.x : l.x;
     l.s2y2 = !hor ? l.h - l.s2h + l.y : l.y;
-    
+
     // trough 1 layout
     l.t1w  = l.s1w;
     l.t1h  = l.s1h;
-    l.t1x1 = hor  ? l.iw - 2 * l.s2w : 0; 
-    l.t1y1 = !hor ? l.ih - 2 * l.s2h : 0; 
-    
+    l.t1x1 = hor  ? l.iw - 2 * l.s2w : 0;
+    l.t1y1 = !hor ? l.ih - 2 * l.s2h : 0;
+
     // trough 2 layout
     l.t2w  = l.s1w;
     l.t2h  = l.s1h;
-    l.t2x1 = hor  ? l.iw - l.s2w : 0; 
-    l.t2y1 = !hor ? l.ih - l.s2h : 0; 
-    
+    l.t2x1 = hor  ? l.iw - l.s2w : 0;
+    l.t2y1 = !hor ? l.ih - l.s2h : 0;
+
     // slit layout
     l.sw  = hor  ? l.iw - 4 * l.s1w : l.ih;
     l.sh  = !hor ? l.ih - 4 * l.s1h : l.iw;
@@ -90,143 +114,149 @@ void calf_fader_set_layout(GtkWidget *widget)
     l.sy2 = !hor ? l.s1h + l.y : l.y;
     l.sw2 = hor  ? l.w - 2 * l.s1w : l.iw;
     l.sh2 = !hor ? l.h - 2 * l.s1h : l.ih;
-    
+
     fader->layout = l;
 }
 
 GtkWidget *
-calf_fader_new(const int horiz = 0, const int size = 2, const double min = 0, const double max = 1, const double step = 0.1)
+calf_fader_new(const int horiz, const int size, const double min, const double max, const double step)
 {
-    GtkObject *adj;
+    GtkAdjustment *adj;
     gint digits;
-    
-    adj = gtk_adjustment_new (min, min, max, step, 10 * step, 0);
-    
-    if (fabs (step) >= 1.0 || step == 0.0)
+
+    adj = gtk_adjustment_new(min, min, max, step, 10 * step, 0);
+
+    if (fabs(step) >= 1.0 || step == 0.0)
         digits = 0;
     else
-        digits = std::min(5, abs((gint) floor (log10 (fabs (step)))));
-        
+        digits = std::min(5, abs((gint) floor(log10(fabs(step)))));
+
     GtkWidget *widget = GTK_WIDGET( g_object_new (CALF_TYPE_FADER, NULL ));
     CalfFader *self = CALF_FADER(widget);
-    
-    GTK_RANGE(widget)->orientation = horiz ? GTK_ORIENTATION_HORIZONTAL : GTK_ORIENTATION_VERTICAL;
+
+    gtk_orientable_set_orientation(GTK_ORIENTABLE(widget),
+        horiz ? GTK_ORIENTATION_HORIZONTAL : GTK_ORIENTATION_VERTICAL);
     gtk_range_set_adjustment(GTK_RANGE(widget), GTK_ADJUSTMENT(adj));
     gtk_scale_set_digits(GTK_SCALE(widget), digits);
-    
+
     self->size = size;
     self->horizontal = horiz;
     self->hover = 0;
-    
+
     return widget;
 }
 
-static bool calf_fader_hover(GtkWidget *widget)
+static bool calf_fader_hover(GtkWidget *widget, int mx, int my)
 {
     CalfFader *fader  = CALF_FADER(widget);
-    
-    gint mx, my;
-    gtk_widget_get_pointer(GTK_WIDGET(widget), &mx, &my);
-    
+
     GtkRange *range   = GTK_RANGE(widget);
     GdkRectangle trough;
     gint sstart, send;
     gtk_range_get_range_rect(range, &trough);
     gtk_range_get_slider_range(range, &sstart, &send);
-    
+
     int hor = fader->horizontal;
-    
+
     int x1 = hor  ? sstart : trough.x;
     int x2 = hor  ? send : trough.x + trough.width;
     int y1 = !hor ? sstart : trough.y;
     int y2 = !hor ? send : trough.y + trough.height;
-    
+
     return mx >= x1 and mx <= x2 and my >= y1 and my <= y2;
 }
-static void calf_fader_check_hover_change(GtkWidget *widget)
+
+static void calf_fader_check_hover_change(GtkWidget *widget, int mx, int my)
 {
     CalfFader *fader = CALF_FADER(widget);
-    bool hover = calf_fader_hover(widget);
+    bool hover = calf_fader_hover(widget, mx, my);
     if (hover != fader->hover)
         gtk_widget_queue_draw(widget);
     fader->hover = hover;
 }
-static gboolean
-calf_fader_motion (GtkWidget *widget, GdkEventMotion *event)
+
+static void
+calf_fader_motion (GtkEventControllerMotion *controller, double x, double y, gpointer user_data)
 {
-    calf_fader_check_hover_change(widget);
-    return FALSE;
+    GtkWidget *widget = (GtkWidget*)user_data;
+    calf_fader_check_hover_change(widget, (int)x, (int)y);
 }
 
-static gboolean
-calf_fader_enter (GtkWidget *widget, GdkEventCrossing *event)
+static void
+calf_fader_enter (GtkEventControllerMotion *controller, double x, double y, gpointer user_data)
 {
-    calf_fader_check_hover_change(widget);
-    return FALSE;
+    GtkWidget *widget = (GtkWidget*)user_data;
+    calf_fader_check_hover_change(widget, (int)x, (int)y);
 }
 
-static gboolean
-calf_fader_leave (GtkWidget *widget, GdkEventCrossing *event)
+static void
+calf_fader_leave (GtkEventControllerMotion *controller, gpointer user_data)
 {
+    GtkWidget *widget = (GtkWidget*)user_data;
     CALF_FADER(widget)->hover = false;
     gtk_widget_queue_draw(widget);
-    return FALSE;
 }
+
 static void
 calf_fader_allocate (GtkWidget *widget, GtkAllocation *allocation)
 {
     calf_fader_set_layout(widget);
 }
+
 static void
-calf_fader_request (GtkWidget *widget, GtkAllocation *request)
-{
-    calf_fader_set_layout(widget);
-}
-static gboolean
-calf_fader_expose (GtkWidget *widget, GdkEventExpose *event)
+calf_fader_snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
 {
     g_assert(CALF_IS_FADER(widget));
-    if (gtk_widget_is_drawable (widget)) {
-        
-        GdkWindow *window = widget->window;
+    if (gtk_widget_is_drawable(widget)) {
+
         GtkScale  *scale  = GTK_SCALE(widget);
         GtkRange  *range  = GTK_RANGE(widget);
         CalfFader *fader  = CALF_FADER(widget);
         CalfFaderLayout l = fader->layout;
-        cairo_t   *c      = gdk_cairo_create(GDK_DRAWABLE(window));
         int horiz         = fader->horizontal;
+
+        int width  = gtk_widget_get_width(widget);
+        int height = gtk_widget_get_height(widget);
+        graphene_rect_t bounds = GRAPHENE_RECT_INIT(0, 0, width, height);
+        cairo_t *c = gtk_snapshot_append_cairo(snapshot, &bounds);
+
         cairo_rectangle(c, l.x, l.y, l.w, l.h);
         cairo_clip(c);
-        
+
         // position
-        double r0  = range->adjustment->upper - range->adjustment->lower;
-        double v0 = range->adjustment->value - range->adjustment->lower;
+        GtkAdjustment *adj = gtk_range_get_adjustment(range);
+        double adj_upper = gtk_adjustment_get_upper(adj);
+        double adj_lower = gtk_adjustment_get_lower(adj);
+        double adj_value = gtk_adjustment_get_value(adj);
+
+        double r0  = adj_upper - adj_lower;
+        double v0  = adj_value - adj_lower;
         if ((horiz and gtk_range_get_inverted(range))
         or (!horiz and gtk_range_get_inverted(range)))
             v0 = -v0 + r0;
         int vp = v0 / r0 * (horiz ? l.w - l.s1w : l.h - l.s1h);
-        
+
         l.t1x2 = l.t2x2 = horiz  ? l.x + vp : l.x;
         l.t1y2 = l.t2y2 = !horiz ? l.y + vp : l.y;
-        
+
         GdkPixbuf *i = fader->image;
-        
+
         // screw 1
         cairo_rectangle(c, l.s1x2, l.s1y2, l.s1w, l.s1h);
-        gdk_cairo_set_source_pixbuf(c, i, l.s1x2 - l.s1x1, l.s1y2 - l.s1y1);
+        calf_cairo_set_source_pixbuf(c, i, l.s1x2 - l.s1x1, l.s1y2 - l.s1y1);
         cairo_fill(c);
-        
+
         // screw 2
         cairo_rectangle(c, l.s2x2, l.s2y2, l.s2w, l.s2h);
-        gdk_cairo_set_source_pixbuf(c, i, l.s2x2 - l.s2x1, l.s2y2 - l.s2y1);
+        calf_cairo_set_source_pixbuf(c, i, l.s2x2 - l.s2x1, l.s2y2 - l.s2y1);
         cairo_fill(c);
-        
+
         // trough
         if (horiz) {
             int x = l.sx2;
             while (x < l.sx2 + l.sw2) {
                 cairo_rectangle(c, x, l.sy2, std::min(l.sx2 + l.sw2 - x, l.sw), l.sh2);
-                gdk_cairo_set_source_pixbuf(c, i, x - l.sx1, l.sy2 - l.sy1);
+                calf_cairo_set_source_pixbuf(c, i, x - l.sx1, l.sy2 - l.sy1);
                 cairo_fill(c);
                 x += l.sw;
             }
@@ -234,36 +264,35 @@ calf_fader_expose (GtkWidget *widget, GdkEventExpose *event)
             int y = l.sy2;
             while (y < l.sy2 + l.sh2) {
                 cairo_rectangle(c, l.sx2, y, l.sw2, std::min(l.sy2 + l.sh2 - y, l.sh));
-                gdk_cairo_set_source_pixbuf(c, i, l.sx2 - l.sx1, y - l.sy1);
+                calf_cairo_set_source_pixbuf(c, i, l.sx2 - l.sx1, y - l.sy1);
                 cairo_fill(c);
                 y += l.sh;
             }
         }
-        
+
         // slider
-        if (fader->hover or widget->state == GTK_STATE_ACTIVE) {
+        if (fader->hover or (gtk_widget_get_state_flags(widget) & GTK_STATE_FLAG_ACTIVE) != 0) {
             cairo_rectangle(c, l.t1x2, l.t1y2, l.t1w, l.t1h);
-            gdk_cairo_set_source_pixbuf(c, i, l.t1x2 - l.t1x1, l.t1y2 - l.t1y1);
+            calf_cairo_set_source_pixbuf(c, i, l.t1x2 - l.t1x1, l.t1y2 - l.t1y1);
         } else {
             cairo_rectangle(c, l.t2x2, l.t2y2, l.t2w, l.t2h);
-            gdk_cairo_set_source_pixbuf(c, i, l.t2x2 - l.t2x1, l.t2y2 - l.t2y1);
+            calf_cairo_set_source_pixbuf(c, i, l.t2x2 - l.t2x1, l.t2y2 - l.t2y1);
         }
         cairo_fill(c);
-        
-        
+
         // draw value label
-        if (scale->draw_value) {
-            PangoLayout *layout;
-            gint _x, _y;
-            layout = gtk_scale_get_layout (scale);
-            gtk_scale_get_layout_offsets (scale, &_x, &_y);
-            gtk_paint_layout (widget->style, window, GTK_STATE_NORMAL, FALSE, NULL,
-                              widget, horiz ? "hscale" : "vscale", _x, _y, layout);
+        if (gtk_scale_get_draw_value(scale)) {
+            PangoLayout *layout = gtk_scale_get_layout(scale);
+            if (layout) {
+                int lx, ly;
+                gtk_scale_get_layout_offsets(scale, &lx, &ly);
+                cairo_move_to(c, lx, ly);
+                pango_cairo_show_layout(c, layout);
+            }
         }
-        
+
         cairo_destroy(c);
     }
-    return FALSE;
 }
 
 void
@@ -277,22 +306,23 @@ calf_fader_set_pixbuf (CalfFader *self, GdkPixbuf *image)
 static void
 calf_fader_class_init (CalfFaderClass *klass)
 {
-    GtkWidgetClass *widget_class      = GTK_WIDGET_CLASS(klass);
-    widget_class->expose_event        = calf_fader_expose;
+    GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
+    widget_class->snapshot       = calf_fader_snapshot;
 }
 
 static void
 calf_fader_init (CalfFader *self)
 {
     GtkWidget *widget = GTK_WIDGET(self);
-    widget->requisition.width = 40;
-    widget->requisition.height = 40;
-    
-    gtk_signal_connect(GTK_OBJECT(widget), "motion-notify-event", GTK_SIGNAL_FUNC (calf_fader_motion), NULL);
-    gtk_signal_connect(GTK_OBJECT(widget), "enter-notify-event", GTK_SIGNAL_FUNC (calf_fader_enter), NULL);
-    gtk_signal_connect(GTK_OBJECT(widget), "leave-notify-event", GTK_SIGNAL_FUNC (calf_fader_leave), NULL);
-    gtk_signal_connect(GTK_OBJECT(widget), "size-allocate", GTK_SIGNAL_FUNC (calf_fader_allocate), NULL);
-    gtk_signal_connect(GTK_OBJECT(widget), "size-request", GTK_SIGNAL_FUNC (calf_fader_request), NULL);
+    gtk_widget_set_size_request(widget, 40, 40);
+
+    GtkEventControllerMotion *motion = GTK_EVENT_CONTROLLER_MOTION(gtk_event_controller_motion_new());
+    g_signal_connect(motion, "motion", G_CALLBACK(calf_fader_motion), GTK_WIDGET(self));
+    g_signal_connect(motion, "enter",  G_CALLBACK(calf_fader_enter),  GTK_WIDGET(self));
+    g_signal_connect(motion, "leave",  G_CALLBACK(calf_fader_leave),  GTK_WIDGET(self));
+    gtk_widget_add_controller(GTK_WIDGET(self), GTK_EVENT_CONTROLLER(motion));
+
+    g_signal_connect(GTK_WIDGET(self), "size-allocate", G_CALLBACK(calf_fader_allocate), NULL);
 }
 
 GType
@@ -314,7 +344,7 @@ calf_fader_get_type (void)
 
         for (int i = 0; ; i++) {
             const char *name = "CalfFader";
-            //char *name = g_strdup_printf("CalfFader%u%d", 
+            //char *name = g_strdup_printf("CalfFader%u%d",
                 //((unsigned int)(intptr_t)calf_fader_class_init) >> 16, i);
             if (g_type_from_name(name)) {
                 //free(name);

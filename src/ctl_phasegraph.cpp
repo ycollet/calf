@@ -15,10 +15,10 @@
  *
  * You should have received a copy of the GNU Lesser General
  * Public License along with this program; if not, write to the
- * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301  USA
  */
- 
+
 #include <calf/ctl_phasegraph.h>
 
 using namespace calf_plugins;
@@ -32,47 +32,47 @@ calf_phase_graph_draw_background(GtkWidget *widget, cairo_t *ctx, int sx, int sy
 {
     int cx = ox + sx / 2;
     int cy = oy + sy / 2;
-    
+
     display_background(widget, ctx, 0, 0, sx, sy, ox, oy, radius, bevel, brightness, shadow, lights, dull);
     cairo_set_source_rgb(ctx, 0.35, 0.4, 0.2);
-    
+
     if (sx > 128 and sy > 128) {
         cairo_select_font_face(ctx, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
         cairo_set_font_size(ctx, 9);
         cairo_text_extents_t te;
-        
+
         cairo_text_extents (ctx, "M", &te);
         cairo_move_to (ctx, cx + 5, oy + 12);
         cairo_show_text (ctx, "M");
-        
+
         cairo_text_extents (ctx, "S", &te);
         cairo_move_to (ctx, ox + 5, cy - 5);
         cairo_show_text (ctx, "S");
-        
+
         cairo_text_extents (ctx, "L", &te);
         cairo_move_to (ctx, ox + 18, oy + 12);
         cairo_show_text (ctx, "L");
-        
+
         cairo_text_extents (ctx, "R", &te);
         cairo_move_to (ctx, ox + sx - 22, oy + 12);
         cairo_show_text (ctx, "R");
     }
-    
+
     cairo_set_line_width(ctx, 1);
-    
+
     cairo_move_to(ctx, ox, oy + sy * 0.5);
     cairo_line_to(ctx, ox + sx, oy + sy * 0.5);
     cairo_stroke(ctx);
-    
+
     cairo_move_to(ctx, ox + sx * 0.5, oy);
     cairo_line_to(ctx, ox + sx * 0.5, oy + sy);
     cairo_stroke(ctx);
-    
+
     cairo_set_source_rgba(ctx, 0, 0, 0, 0.2);
     cairo_move_to(ctx, ox, oy);
     cairo_line_to(ctx, ox + sx, oy + sy);
     cairo_stroke(ctx);
-    
+
     cairo_move_to(ctx, ox, oy + sy);
     cairo_line_to(ctx, ox + sx, oy);
     cairo_stroke(ctx);
@@ -91,33 +91,32 @@ calf_phase_graph_copy_surface(cairo_t *ctx, cairo_surface_t *source, int x = 0, 
     }
     cairo_restore(ctx);
 }
-static gboolean
-calf_phase_graph_expose (GtkWidget *widget, GdkEventExpose *event)
+static void
+calf_phase_graph_snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
 {
     g_assert(CALF_IS_PHASE_GRAPH(widget));
     CalfPhaseGraph *pg = CALF_PHASE_GRAPH(widget);
-    if (!pg->source) 
-        return FALSE;
-    
+    if (!pg->source)
+        return;
+
     // dimensions
-    int width  = widget->allocation.width;
-    int height = widget->allocation.height;
-    int ox     = widget->style->xthickness;
-    int oy     = widget->style->ythickness;
+    int width  = gtk_widget_get_width(widget);
+    int height = gtk_widget_get_height(widget);
+    graphene_rect_t bounds = GRAPHENE_RECT_INIT(0, 0, width, height);
+    cairo_t *c = gtk_snapshot_append_cairo(snapshot, &bounds);
+    int ox     = 1;
+    int oy     = 1;
     int sx     = width - ox * 2;
     int sy     = height - oy * 2;
-    int x      = widget->allocation.x;
-    int y      = widget->allocation.y;
-    
+
     sx += sx % 2 - 1;
     sy += sy % 2 - 1;
     int rad = sx / 2;
     int cx = ox + sx / 2;
     int cy = oy + sy / 2;
-    
-    float radius, bevel, shadow, lights, dull;
-    gtk_widget_style_get(widget, "border-radius", &radius, "bevel",  &bevel, "shadow", &shadow, "lights", &lights, "dull", &dull, NULL);
-    
+
+    float radius = 4.f; float bevel = 0.2f; float shadow = 7.f; float lights = 0.9f; float dull = 0.15f;
+
     // some values as pointers for the audio plug-in call
     float * phase_buffer = 0;
     int length = 0;
@@ -126,42 +125,41 @@ calf_phase_graph_expose (GtkWidget *widget, GdkEventExpose *event)
     bool use_fade = true;
     int accuracy = 1;
     bool display = true;
-    
+
     // cairo initialization stuff
-    cairo_t *c = gdk_cairo_create(GDK_DRAWABLE(widget->window));
     cairo_t *ctx_back;
     cairo_t *ctx_cache;
-    
+
     if( pg->background == NULL ) {
         // looks like its either first call or the widget has been resized.
         // create the background surface (stolen from line graph)...
         pg->background = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height );
         pg->cache = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height );
-        
+
         // ...and draw some bling bling onto it...
         ctx_back = cairo_create(pg->background);
         calf_phase_graph_draw_background(widget, ctx_back, sx, sy, ox, oy, radius, bevel, 1, shadow, lights, dull);
         // ...and copy it to the cache
-        ctx_cache = cairo_create(pg->cache); 
+        ctx_cache = cairo_create(pg->cache);
         calf_phase_graph_copy_surface(ctx_cache, pg->background, 0, 0, 1);
     } else {
         ctx_back = cairo_create(pg->background);
-        ctx_cache = cairo_create(pg->cache); 
+        ctx_cache = cairo_create(pg->cache);
     }
-    
+
     pg->source->get_phase_graph(pg->source_id, &phase_buffer,
                                 &length, &mode, &use_fade,
                                 &fade, &accuracy, &display);
-    
+
     // process some values set by the plug-in
     accuracy *= 2;
     accuracy = 12 - accuracy;
-    
+
     cairo_rectangle(ctx_cache, ox, oy, sx, sy);
     cairo_clip(ctx_cache);
-    
+
     calf_phase_graph_copy_surface(ctx_cache, pg->background, 0, 0, use_fade ? fade : 1);
-    
+
     if(display) {
         cairo_rectangle(ctx_cache, ox, oy, sx, sy);
         cairo_clip(ctx_cache);
@@ -224,27 +222,32 @@ calf_phase_graph_expose (GtkWidget *widget, GdkEventExpose *event)
                 break;
         }
     }
-    
-    calf_phase_graph_copy_surface(c, pg->cache, x, y);
-    
+
+    calf_phase_graph_copy_surface(c, pg->cache, 0, 0);
+
     cairo_destroy(c);
     cairo_destroy(ctx_back);
     cairo_destroy(ctx_cache);
     // printf("exposed %p %dx%d %d+%d\n", widget->window, event->area.x, event->area.y, event->area.width, event->area.height);
-    return TRUE;
 }
 
 static void
-calf_phase_graph_size_request (GtkWidget *widget,
-                           GtkRequisition *requisition)
+calf_phase_graph_measure (GtkWidget *widget,
+                          GtkOrientation orientation,
+                          int for_size,
+                          int *minimum, int *natural,
+                          int *minimum_baseline, int *natural_baseline)
 {
     g_assert(CALF_IS_PHASE_GRAPH(widget));
-    // CalfLineGraph *lg = CALF_LINE_GRAPH(widget);
+    *minimum = 40;
+    *natural = 40;
+    if (minimum_baseline) *minimum_baseline = -1;
+    if (natural_baseline)  *natural_baseline  = -1;
 }
 
 static void
 calf_phase_graph_size_allocate (GtkWidget *widget,
-                           GtkAllocation *allocation)
+                           int width, int height, int baseline)
 {
     g_assert(CALF_IS_PHASE_GRAPH(widget));
     CalfPhaseGraph *lg = CALF_PHASE_GRAPH(widget);
@@ -254,42 +257,29 @@ calf_phase_graph_size_allocate (GtkWidget *widget,
     if(lg->background)
         cairo_surface_destroy(lg->background);
     lg->background = NULL;
-    
-    widget->allocation = *allocation;
-    GtkAllocation &a = widget->allocation;
-    if (a.width > a.height) {
-        a.x += (a.width - a.height) / 2;
-        a.width = a.height;
+
+    int alloc_x = 0;
+    int alloc_y = 0;
+    int alloc_w = width;
+    int alloc_h = height;
+    if (alloc_w > alloc_h) {
+        alloc_x += (alloc_w - alloc_h) / 2;
+        alloc_w = alloc_h;
     }
-    if (a.width < a.height) {
-        a.y += (a.height - a.width) / 2;
-        a.height = a.width;
+    if (alloc_w < alloc_h) {
+        alloc_y += (alloc_h - alloc_w) / 2;
+        alloc_h = alloc_w;
     }
-    parent_class->size_allocate(widget, &a);
+    parent_class->size_allocate(widget, alloc_w, alloc_h, baseline);
 }
 
 static void
 calf_phase_graph_class_init (CalfPhaseGraphClass *klass)
 {
     GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
-    widget_class->expose_event = calf_phase_graph_expose;
-    widget_class->size_request = calf_phase_graph_size_request;
+    widget_class->snapshot = calf_phase_graph_snapshot;
+    widget_class->measure = calf_phase_graph_measure;
     widget_class->size_allocate = calf_phase_graph_size_allocate;
-    gtk_widget_class_install_style_property(
-        widget_class, g_param_spec_float("border-radius", "Border Radius", "Generate round edges",
-        0, 24, 4, GParamFlags(G_PARAM_READWRITE)));
-    gtk_widget_class_install_style_property(
-        widget_class, g_param_spec_float("bevel", "Bevel", "Bevel the object",
-        -2, 2, 0.2, GParamFlags(G_PARAM_READWRITE)));
-    gtk_widget_class_install_style_property(
-        widget_class, g_param_spec_float("shadow", "Shadow", "Draw shadows inside",
-        0, 16, 4, GParamFlags(G_PARAM_READWRITE)));
-    gtk_widget_class_install_style_property(
-        widget_class, g_param_spec_float("lights", "Lights", "Draw lights inside",
-        0, 1, 1, GParamFlags(G_PARAM_READWRITE)));
-    gtk_widget_class_install_style_property(
-        widget_class, g_param_spec_float("dull", "Dull", "Draw dull inside",
-        0, 1, 0.25, GParamFlags(G_PARAM_READWRITE)));
 }
 
 static void
@@ -304,11 +294,9 @@ static void
 calf_phase_graph_init (CalfPhaseGraph *self)
 {
     GtkWidget *widget = GTK_WIDGET(self);
-    widget->requisition.width = 40;
-    widget->requisition.height = 40;
+    gtk_widget_set_size_request(widget, 40, 40);
     self->background = NULL;
-    gtk_widget_set_has_window(widget, FALSE);
-    g_signal_connect(GTK_OBJECT(widget), "unrealize", G_CALLBACK(calf_phase_graph_unrealize), (gpointer)self);
+    g_signal_connect(G_OBJECT(widget), "unrealize", G_CALLBACK(calf_phase_graph_unrealize), (gpointer)self);
 }
 
 GtkWidget *

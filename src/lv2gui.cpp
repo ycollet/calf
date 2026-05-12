@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU Lesser General
  * Public License along with this program; if not, write to the
- * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301  USA
  */
 #include <sys/wait.h>
@@ -50,7 +50,7 @@ struct plugin_proxy_base
     LV2UI_Controller controller;
 
     // Values extracted from the Features array from the host
-    
+
     /// Handle to the plugin instance
     LV2_Handle instance_handle;
     /// Data access feature instance
@@ -61,7 +61,7 @@ struct plugin_proxy_base
     lv2_external_ui_host *ext_ui_host;
     bool atom_present;
     uint32_t property_type, string_type, event_transfer;
-    
+
     /// Instance pointer - usually NULL unless the host supports instance-access extension
     plugin_ctl_iface *instance;
     /// If true, a given parameter (not port) may be sent to host - it is blocked when the parameter is written to by the host
@@ -78,12 +78,12 @@ struct plugin_proxy_base
     gulong widget_destroyed_signal;
     /// Signal handler for external window destroyed
     gulong window_destroyed_signal;
-    
+
     plugin_proxy_base(const plugin_metadata_iface *metadata, LV2UI_Write_Function wf, LV2UI_Controller c, const LV2_Feature* const* features);
 
     /// Send a float value to a control port in the host
     void send_float_to_host(int param_no, float value);
-    
+
     /// Send a string value to a string port in the host, by name (configure-like mechanism)
     char *configure(const char *key, const char *value);
 
@@ -92,16 +92,16 @@ struct plugin_proxy_base
 
     /// Enable sending to host for all ports
     void enable_all_sends();
-    
+
     /// Obtain instance pointers
     void resolve_instance();
 
     /// Obtain line graph interface if available
     const line_graph_iface *get_line_graph_iface() const;
-    
+
     /// Obtain phase graph interface if available
     const phase_graph_iface *get_phase_graph_iface() const;
-    
+
     /// Map an URI to an integer value using a given URID map
     uint32_t map_urid(const char *uri);
 
@@ -116,17 +116,17 @@ plugin_proxy_base::plugin_proxy_base(const plugin_metadata_iface *metadata, LV2U
     instance(NULL)
 {
     plugin_metadata = metadata;
-    
+
     write_function = wf;
     controller = c;
-    
+
     atom_present = true; // XXXKF
-    
+
     param_count = metadata->get_param_count();
     param_offset = metadata->get_param_port_offset();
     widget_destroyed_signal = 0;
     window_destroyed_signal = 0;
-    
+
     /// Block all updates until GUI is ready
     sends.resize(param_count, false);
     params.resize(param_count);
@@ -261,7 +261,7 @@ struct lv2_plugin_proxy: public plugin_ctl_iface, public plugin_proxy_base, publ
     plugin_gui *gui;
     /// Glib source ID for update timer
     int source_id;
-    
+
     lv2_plugin_proxy(const plugin_metadata_iface *md, LV2UI_Write_Function wf, LV2UI_Controller c, const LV2_Feature* const* f)
     : plugin_proxy_base(md, wf, c, f)
     {
@@ -272,29 +272,29 @@ struct lv2_plugin_proxy: public plugin_ctl_iface, public plugin_proxy_base, publ
             conditions.insert("directlink");
             conditions.insert("configure");
         }
-        conditions.insert("lv2gui");    
+        conditions.insert("lv2gui");
     }
-    
+
     virtual float get_param_value(int param_no) {
         if (param_no < 0 || param_no >= param_count)
             return 0;
         return params[param_no];
     }
-    
+
     virtual void set_param_value(int param_no, float value) {
         if (param_no < 0 || param_no >= param_count)
             return;
         send_float_to_host(param_no, value);
     }
-    
+
     virtual bool activate_preset(int bank, int program)
     {
         return false;
     }
-    
+
     /// Override for a method in plugin_ctl_iface - trivial delegation to base class
     virtual char *configure(const char *key, const char *value) { return plugin_proxy_base::configure(key, value); }
-    
+
     virtual float get_level(unsigned int port) { return 0.f; }
     virtual void execute(int command_no) { assert(0); }
     virtual void send_configures(send_configure_iface *sci)
@@ -302,7 +302,7 @@ struct lv2_plugin_proxy: public plugin_ctl_iface, public plugin_proxy_base, publ
         plugin_proxy_base::send_configures(sci);
     }
     virtual int send_status_updates(send_updates_iface *sui, int last_serial)
-    { 
+    {
         if (instance)
             return instance->send_status_updates(sui, last_serial);
         else // no status updates because of lack of instance-access/data-access
@@ -311,7 +311,7 @@ struct lv2_plugin_proxy: public plugin_ctl_iface, public plugin_proxy_base, publ
     virtual const plugin_metadata_iface *get_metadata_iface() const { return plugin_metadata; }
     /// Override for a method in plugin_ctl_iface - trivial delegation to base class
     virtual const line_graph_iface *get_line_graph_iface() const { return plugin_proxy_base::get_line_graph_iface(); }
-    
+
     /// Override for a method in plugin_ctl_iface - trivial delegation to base class
     virtual const phase_graph_iface *get_phase_graph_iface() const { return plugin_proxy_base::get_phase_graph_iface(); }
 };
@@ -344,7 +344,7 @@ LV2UI_Handle gui_instantiate(const struct _LV2UI_Descriptor* descriptor,
                           const LV2_Feature* const*       features)
 {
     static int argc = 0;
-    gtk_init(&argc, NULL);
+    gtk_init();
 
     const plugin_metadata_iface *md = plugin_registry::instance().get_by_uri(plugin_uri);
     if (!md)
@@ -352,10 +352,10 @@ LV2UI_Handle gui_instantiate(const struct _LV2UI_Descriptor* descriptor,
     lv2_plugin_proxy *proxy = new lv2_plugin_proxy(md, write_function, controller, features);
     if (!proxy)
         return NULL;
-    
+
     plugin_gui_window *window = new plugin_gui_window(proxy, NULL);
     plugin_gui *gui = new plugin_gui(window);
-    
+
     const char *xml = proxy->plugin_metadata->get_gui_xml("gui");
     assert(xml);
     gui->optwidget = gui->create_from_xml(proxy, xml);
@@ -363,18 +363,29 @@ LV2UI_Handle gui_instantiate(const struct _LV2UI_Descriptor* descriptor,
     if (gui->optwidget)
     {
         GtkWidget *decoTable = window->decorate(gui->optwidget);
-        GtkWidget *eventbox  = gtk_event_box_new();
-        gtk_widget_set_name( GTK_WIDGET(eventbox), "Calf-Plugin" );
-        gtk_container_add( GTK_CONTAINER(eventbox), decoTable );
-        gtk_widget_show_all(eventbox);
+        // Replace GtkEventBox with a plain GtkBox
+        GtkWidget *eventbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+        gtk_widget_set_name(GTK_WIDGET(eventbox), "Calf-Plugin");
+        gtk_box_append(GTK_BOX(eventbox), decoTable);
+        gtk_widget_show(eventbox);
         gui->optwidget = eventbox;
-        proxy->source_id = g_timeout_add_full(G_PRIORITY_LOW, 1000/30, plugin_on_idle, gui, NULL); // 30 fps should be enough for everybody    
+        proxy->source_id = g_timeout_add_full(G_PRIORITY_LOW, 1000/30, plugin_on_idle, gui, NULL); // 30 fps should be enough for everybody
         proxy->widget_destroyed_signal = g_signal_connect(G_OBJECT(gui->optwidget), "destroy", G_CALLBACK(on_gui_widget_destroy), (gpointer)gui);
     }
-    std::string rcf = PKGLIBDIR "/styles/" + proxy->get_config()->style + "/gtk.rc";
-    gtk_rc_parse(rcf.c_str());
+
+    // Load CSS style (replaces gtk_rc_parse)
+    std::string style_base = PKGLIBDIR "/styles/" + proxy->get_config()->style + "/";
+    std::string css_path = style_base + "gtk.css";
+    GtkCssProvider *css = gtk_css_provider_new();
+    gtk_css_provider_load_from_path(css, css_path.c_str());
+    gtk_style_context_add_provider_for_display(
+        gdk_display_get_default(),
+        GTK_STYLE_PROVIDER(css),
+        GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    g_object_unref(css);
+
     window->show_rack_ears(proxy->get_config()->rack_ears);
-    
+
     *(GtkWidget **)(widget) = gui->optwidget;
 
     // find window title
@@ -494,11 +505,11 @@ int gui_show(LV2UI_Handle handle)
 
     if (! gui->optwindow)
     {
-        gui->optwindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+        gui->optwindow = gtk_window_new();
         proxy->window_destroyed_signal = g_signal_connect(G_OBJECT(gui->optwindow), "destroy", G_CALLBACK(gui_destroy), (gpointer)gui);
 
         if (gui->optwidget)
-            gtk_container_add(GTK_CONTAINER(gui->optwindow), gui->optwidget);
+            gtk_window_set_child(GTK_WINDOW(gui->optwindow), gui->optwidget);
 
         if (gui->opttitle)
             gtk_window_set_title(GTK_WINDOW(gui->optwindow), gui->opttitle);
@@ -506,7 +517,7 @@ int gui_show(LV2UI_Handle handle)
         gtk_window_set_resizable(GTK_WINDOW(gui->optwindow), false);
     }
 
-    gtk_widget_show_all(gui->optwindow);
+    gtk_widget_show(gui->optwindow);
     gtk_window_present(GTK_WINDOW(gui->optwindow));
 
     return 0;
@@ -522,8 +533,8 @@ int gui_hide(LV2UI_Handle handle)
         g_signal_handler_disconnect(gui->optwindow, proxy->window_destroyed_signal);
         proxy->window_destroyed_signal = 0;
 
-        gtk_widget_hide_all(gui->optwindow);
-        gtk_widget_destroy(gui->optwindow);
+        gtk_widget_hide(gui->optwindow);
+        gtk_window_destroy(GTK_WINDOW(gui->optwindow));
         gui->optwindow = NULL;
         gui->optclosed = true;
 
@@ -572,7 +583,7 @@ const LV2UI_Descriptor* lv2ui_descriptor(uint32_t index)
     gtkgui.extension_data = gui_extension;
     if (!index--)
         return &gtkgui;
-    
+
     static LV2UI_Descriptor gtkguireq;
     gtkguireq.URI = "http://calf.sourceforge.net/plugins/gui/gtk2-gui-req";
     gtkguireq.instantiate = gui_instantiate;
@@ -581,6 +592,6 @@ const LV2UI_Descriptor* lv2ui_descriptor(uint32_t index)
     gtkguireq.extension_data = gui_extension;
     if (!index--)
         return &gtkguireq;
-    
+
     return NULL;
 }

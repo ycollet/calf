@@ -14,10 +14,10 @@
  *
  * You should have received a copy of the GNU Lesser General
  * Public License along with this program; if not, write to the
- * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301  USA
  */
- 
+
 #include <calf/gui_config.h>
 #include <calf/gui_controls.h>
 #include <calf/preset.h>
@@ -73,7 +73,7 @@ GtkWidget *plugin_gui_widget::create(plugin_ctl_iface *_jh)
 {
     create_gui(_jh);
     gtk_widget_set_name(container, "Calf-Plugin-Strip");
-    gtk_widget_show_all(container);
+    gtk_widget_set_visible(container, TRUE);
     toplevel = container;
     g_signal_connect (GTK_WIDGET(toplevel), "destroy", G_CALLBACK (on_window_destroyed), (plugin_gui_widget *)this);
     return container;
@@ -99,12 +99,34 @@ plugin_gui_widget::~plugin_gui_widget()
     gui = NULL;
 }
 
-/******************************* Actions **************************************************/
- 
-void plugin_gui_window::store_preset_action(GtkAction *action, plugin_gui_window *gui_win)
+/******************************* dialog helper **************************************************/
+
+static void dialog_response_cb(GtkDialog *dialog, gint response, gpointer data)
 {
-    if (gui_win->gui->preset_access)
-        gui_win->gui->preset_access->store_preset();
+    int *result = (int *)data;
+    *result = response;
+    g_main_loop_quit((GMainLoop *)g_object_get_data(G_OBJECT(dialog), "run-loop"));
+}
+
+static int run_dialog_sync(GtkDialog *dialog)
+{
+    GMainLoop *loop = g_main_loop_new(NULL, FALSE);
+    int result = GTK_RESPONSE_DELETE_EVENT;
+    g_object_set_data(G_OBJECT(dialog), "run-loop", loop);
+    g_signal_connect(dialog, "response", G_CALLBACK(dialog_response_cb), &result);
+    gtk_widget_set_visible(GTK_WIDGET(dialog), TRUE);
+    g_main_loop_run(loop);
+    g_main_loop_unref(loop);
+    return result;
+}
+
+/******************************* Actions **************************************************/
+
+void plugin_gui_window::store_preset_action(GSimpleAction *action, GVariant *parameter, gpointer gui_win)
+{
+    plugin_gui_window *self = (plugin_gui_window *)gui_win;
+    if (self->gui->preset_access)
+        self->gui->preset_access->store_preset();
 }
 
 namespace {
@@ -114,7 +136,7 @@ struct activate_preset_params
     preset_access_iface *preset_access;
     int preset;
     bool builtin;
-    
+
     activate_preset_params(preset_access_iface *_pai, int _preset, bool _builtin)
     : preset_access(_pai), preset(_preset), builtin(_builtin)
     {
@@ -125,42 +147,36 @@ struct activate_preset_params
     }
 };
 
-void activate_preset(GtkAction *action, activate_preset_params *params)
+void activate_preset(GSimpleAction *action, GVariant *parameter, gpointer data)
 {
+    activate_preset_params *params = (activate_preset_params *)data;
     params->preset_access->activate_preset(params->preset, params->builtin);
 }
 
 }
 
-void plugin_gui_window::help_action(GtkAction *action, plugin_gui_window *gui_win)
+void plugin_gui_window::help_action(GSimpleAction *action, GVariant *parameter, gpointer gui_win)
 {
-    string uri = "file://" PKGDOCDIR "/" + string(gui_win->gui->plugin->get_metadata_iface()->get_label()) + ".html";
-    GError *error = NULL;
-    if (!gtk_show_uri(gtk_window_get_screen(GTK_WINDOW(gui_win->toplevel)), uri.c_str(), time(NULL), &error))
-    {
-        GtkMessageDialog *dlg = GTK_MESSAGE_DIALOG(gtk_message_dialog_new(GTK_WINDOW(gui_win->toplevel), GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_OTHER, GTK_BUTTONS_OK, "%s", error->message));
-        if (!dlg)
-            return;
-        
-        gtk_dialog_run(GTK_DIALOG(dlg));
-        gtk_widget_destroy(GTK_WIDGET(dlg));
-        
-        g_error_free(error);
-    }
+    plugin_gui_window *self = (plugin_gui_window *)gui_win;
+    string uri = "file://" PKGDOCDIR "/" + string(self->gui->plugin->get_metadata_iface()->get_label()) + ".html";
+    GtkUriLauncher *launcher = gtk_uri_launcher_new(uri.c_str());
+    gtk_uri_launcher_launch(launcher, GTK_WINDOW(self->toplevel), NULL, NULL, NULL);
+    g_object_unref(launcher);
 }
 
-void plugin_gui_window::about_action(GtkAction *action, plugin_gui_window *gui_win)
+void plugin_gui_window::about_action(GSimpleAction *action, GVariant *parameter, gpointer gui_win)
 {
+    plugin_gui_window *self = (plugin_gui_window *)gui_win;
     GtkAboutDialog *dlg = GTK_ABOUT_DIALOG(gtk_about_dialog_new());
     if (!dlg)
         return;
-    
+
     static const char *artists[] = {
         "Markus Schmidt (GUI, icons)",
         "Thorsten Wilms (previous icon)",
         NULL
     };
-    
+
     static const char *authors[] = {
         "Krzysztof Foltman <wdev@foltman.com>",
         "Hermann Meyer <brummer-@web.de>",
@@ -176,13 +192,12 @@ void plugin_gui_window::about_action(GtkAction *action, plugin_gui_window *gui_w
         "Dave Robillard <dave@drobilla.net>",
         NULL
     };
-    
-    static const char translators[] = 
+
+    static const char translators[] =
         "Russian: Alexandre Prokoudine <alexandre.prokoudine@gmail.com>\n"
     ;
-    
-    string label = gui_win->gui->plugin->get_metadata_iface()->get_label();
-    gtk_about_dialog_set_name(dlg, ("About Calf " + label).c_str());
+
+    string label = self->gui->plugin->get_metadata_iface()->get_label();
     gtk_about_dialog_set_program_name(dlg, ("Calf " + label).c_str());
     gtk_about_dialog_set_version(dlg, PACKAGE_VERSION);
     gtk_about_dialog_set_website(dlg, "http://calf.sourceforge.net/");
@@ -191,13 +206,57 @@ void plugin_gui_window::about_action(GtkAction *action, plugin_gui_window *gui_w
     gtk_about_dialog_set_artists(dlg, artists);
     gtk_about_dialog_set_authors(dlg, authors);
     gtk_about_dialog_set_translator_credits(dlg, translators);
-    gtk_dialog_run(GTK_DIALOG(dlg));
-    gtk_widget_destroy(GTK_WIDGET(dlg));
+    run_dialog_sync(GTK_DIALOG(dlg));
+    gtk_window_destroy(GTK_WINDOW(dlg));
 }
 
-void tips_tricks_action(GtkAction *action, plugin_gui_window *gui_win)
+struct info_dlg_ctx { GMainLoop *loop; bool closed; };
+static void info_dlg_btn_cb(GtkButton *, gpointer data) {
+    info_dlg_ctx *c = (info_dlg_ctx *)data;
+    g_main_loop_quit(c->loop);
+}
+static void info_dlg_destroy_cb(GtkWidget *, gpointer data) {
+    info_dlg_ctx *c = (info_dlg_ctx *)data;
+    c->closed = true;
+    if (g_main_loop_is_running(c->loop))
+        g_main_loop_quit(c->loop);
+}
+static void show_info_dialog(GtkWindow *parent, const char *title, const char *text)
 {
-    static const char tips_and_tricks[] = 
+    GtkWidget *win = gtk_window_new();
+    gtk_window_set_title(GTK_WINDOW(win), title);
+    gtk_window_set_modal(GTK_WINDOW(win), TRUE);
+    gtk_window_set_resizable(GTK_WINDOW(win), FALSE);
+    if (parent)
+        gtk_window_set_transient_for(GTK_WINDOW(win), parent);
+    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+    gtk_widget_set_margin_start(vbox, 12); gtk_widget_set_margin_end(vbox, 12);
+    gtk_widget_set_margin_top(vbox, 12);  gtk_widget_set_margin_bottom(vbox, 8);
+    gtk_window_set_child(GTK_WINDOW(win), vbox);
+    GtkWidget *label = gtk_label_new(text);
+    gtk_label_set_wrap(GTK_LABEL(label), TRUE);
+    gtk_label_set_max_width_chars(GTK_LABEL(label), 60);
+    gtk_box_append(GTK_BOX(vbox), label);
+    GtkWidget *btnbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    gtk_widget_set_halign(btnbox, GTK_ALIGN_END);
+    gtk_widget_set_margin_top(btnbox, 4);
+    gtk_box_append(GTK_BOX(vbox), btnbox);
+    info_dlg_ctx ctx = { g_main_loop_new(NULL, FALSE), false };
+    GtkWidget *ok_btn = gtk_button_new_with_label("OK");
+    g_signal_connect(ok_btn, "clicked", G_CALLBACK(info_dlg_btn_cb), &ctx);
+    gtk_box_append(GTK_BOX(btnbox), ok_btn);
+    g_signal_connect(win, "destroy", G_CALLBACK(info_dlg_destroy_cb), &ctx);
+    gtk_widget_set_visible(win, TRUE);
+    g_main_loop_run(ctx.loop);
+    if (!ctx.closed)
+        gtk_window_destroy(GTK_WINDOW(win));
+    g_main_loop_unref(ctx.loop);
+}
+
+static void tips_tricks_action(GSimpleAction *action, GVariant *parameter, gpointer gui_win)
+{
+    plugin_gui_window *self = (plugin_gui_window *)gui_win;
+    static const char tips_and_tricks[] =
     "1. Knob and Fader Control\n"
     "\n"
     "* Use SHIFT-dragging for increased precision\n"
@@ -210,235 +269,209 @@ void tips_tricks_action(GtkAction *action, plugin_gui_window *gui_win)
     "If you consider those a waste of screen space, you can turn them off in Preferences dialog in Calf JACK host. The setting affects all versions of the GUI (LV2 GTK+, LV2 External, JACK host).\n"
     "\n"
     ;
-    GtkMessageDialog *dlg = GTK_MESSAGE_DIALOG(gtk_message_dialog_new(GTK_WINDOW(gui_win->toplevel), GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_OTHER, GTK_BUTTONS_OK, "%s", tips_and_tricks));
-    if (!dlg)
-        return;
-    
-    
-    gtk_window_set_title(GTK_WINDOW(dlg), "Tips and Tricks");
-    gtk_dialog_run(GTK_DIALOG(dlg));
-    gtk_widget_destroy(GTK_WIDGET(dlg));
+    show_info_dialog(GTK_WINDOW(self->toplevel), "Tips and Tricks", tips_and_tricks);
 }
 
-void calf_plugins::activate_command(GtkAction *action, activate_command_params *params)
+void calf_plugins::activate_command(GSimpleAction *action, GVariant *parameter, gpointer data)
 {
+    activate_command_params *params = (activate_command_params *)data;
     plugin_gui *gui = params->gui;
     gui->plugin->execute(params->function_idx);
     gui->refresh();
 }
 
-
-static const GtkActionEntry actions[] = {
-    { "PresetMenuAction", NULL, "_Preset", NULL, "Preset operations", NULL },
-    { "BuiltinPresetMenuAction", NULL, "_Built-in", NULL, "Built-in (factory) presets", NULL },
-    { "UserPresetMenuAction", NULL, "_User", NULL, "User (your) presets", NULL },
-    { "CommandMenuAction", NULL, "_Commands", NULL, "Plugin-related commands", NULL },
-    { "HelpMenuAction", NULL, "_Help", NULL, "Help-related commands", NULL },
-    { "store-preset", "gtk-save-as", "Store preset", NULL, "Store a current setting as preset", (GCallback)plugin_gui_window::store_preset_action },
-    { "about", "gtk-about", "_About...", NULL, "About this plugin", (GCallback)plugin_gui_window::about_action },
-    { "HelpMenuItemAction", "gtk-help", "_Help", NULL, "Show manual page for this plugin", (GCallback)plugin_gui_window::help_action },
-    { "tips-tricks", NULL, "_Tips and tricks...", NULL, "Show a list of tips and tricks", (GCallback)tips_tricks_action },
-};
-
 /***************************** GUI window ********************************************/
-
-static const char *ui_xml = 
-"<ui>\n"
-"  <menubar>\n"
-"    <menu action=\"PresetMenuAction\">\n"
-"      <menuitem action=\"store-preset\"/>\n"
-"      <separator/>\n"
-"      <placeholder name=\"builtin_presets\"/>\n"
-"      <separator/>\n"
-"      <placeholder name=\"user_presets\"/>\n"
-"    </menu>\n"
-"    <placeholder name=\"commands\"/>\n"
-"    <menu action=\"HelpMenuAction\">\n"
-"      <menuitem action=\"HelpMenuItemAction\"/>\n"
-"      <menuitem action=\"tips-tricks\"/>\n"
-"      <separator/>\n"
-"      <menuitem action=\"about\"/>\n"
-"    </menu>\n"
-"  </menubar>\n"
-"</ui>\n"
-;
-
-static const char *general_preset_pre_xml = 
-"<ui>\n"
-"  <menubar>\n"
-"    <menu action=\"PresetMenuAction\">\n";
-
-static const char *builtin_preset_pre_xml = 
-"        <placeholder name=\"builtin_presets\">\n";
-
-static const char *user_preset_pre_xml = 
-"        <placeholder name=\"user_presets\">\n";
-
-static const char *preset_post_xml = 
-"        </placeholder>\n"
-"    </menu>\n"
-"  </menubar>\n"
-"</ui>\n"
-;
-
-static const char *command_pre_xml = 
-"<ui>\n"
-"  <menubar>\n"
-"    <placeholder name=\"commands\">\n"
-"      <menu action=\"CommandMenuAction\">\n";
-
-static const char *command_post_xml = 
-"      </menu>\n"
-"    </placeholder>\n"
-"  </menubar>\n"
-"</ui>\n"
-;
 
 plugin_gui_window::plugin_gui_window(gui_environment_iface *_env, main_window_iface *_main)
 : plugin_gui_widget(_env, _main)
 {
-    ui_mgr = NULL;
-    std_actions = NULL;
-    builtin_preset_actions = NULL;
-    user_preset_actions = NULL;
-    command_actions = NULL;
+    menu_model = NULL;
+    win_actions = NULL;
     notifier = NULL;
 }
 
-string plugin_gui_window::make_gui_preset_list(GtkActionGroup *grp, bool builtin, char &ch)
+void plugin_gui_window::fill_gui_presets(bool builtin, char &ch)
 {
     preset_access_iface *pai = gui->preset_access;
-    string preset_xml = string(general_preset_pre_xml) + (builtin ? builtin_preset_pre_xml : user_preset_pre_xml);
     preset_vector &pvec = (builtin ? get_builtin_presets() : get_user_presets()).presets;
-    GtkActionGroup *preset_actions = builtin ? builtin_preset_actions : user_preset_actions;
+
+    // Append to the Preset submenu (index 0 in menu_model)
+    GMenuModel *preset_menu_model = g_menu_model_get_item_link(G_MENU_MODEL(menu_model), 0, G_MENU_LINK_SUBMENU);
+    if (!preset_menu_model)
+        return;
+    GMenu *preset_menu = G_MENU(preset_menu_model);
+
     for (unsigned int i = 0; i < pvec.size(); i++)
     {
         if (pvec[i].plugin != gui->effect_name)
             continue;
-        stringstream ss;
-        ss << (builtin ? "builtin_preset" : "user_preset") << i;
-        preset_xml += "          <menuitem name=\"" + pvec[i].name+"\" action=\""+ss.str()+"\"/>\n";
+
         if (ch != ' ' && ++ch == ':')
             ch = 'A';
         if (ch > 'Z')
             ch = ' ';
 
-        string sv = ss.str();
-        string prefix = ch == ' ' ? string() : string("_")+ch+" ";
+        string prefix = ch == ' ' ? string() : string("_") + ch + " ";
         string name = prefix + pvec[i].name;
-        GtkActionEntry ae = { sv.c_str(), NULL, name.c_str(), NULL, NULL, (GCallback)::activate_preset };
-        gtk_action_group_add_actions_full(preset_actions, &ae, 1, (gpointer)new activate_preset_params(pai, i, builtin), activate_preset_params::action_destroy_notify);
-    }
-    preset_xml += preset_post_xml;
-    return preset_xml;
-}
+        string action_name = string(builtin ? "builtin_preset" : "user_preset") + to_string(i);
+        string full_action = "win." + action_name;
 
-string plugin_gui_window::make_gui_command_list(GtkActionGroup *grp, const plugin_metadata_iface *metadata)
-{
-    string command_xml = command_pre_xml;
-    plugin_command_info *ci = metadata->get_commands();
-    if (!ci)
-        return "";
-    for(int i = 0; ci->name; i++, ci++)
-    {
-        stringstream ss;
-        ss << "          <menuitem name=\"" << ci->name << "\" action=\"" << ci->label << "\"/>\n";
-        
-        GtkActionEntry ae = { ci->label, NULL, ci->name, NULL, ci->description, (GCallback)activate_command };
-        gtk_action_group_add_actions_full(grp, &ae, 1, (gpointer)new activate_command_params(gui, i), activate_preset_params::action_destroy_notify);
-        command_xml += ss.str();
-    }
-    command_xml += command_post_xml;
-    return command_xml;
-}
+        GMenuItem *menu_item = g_menu_item_new(name.c_str(), full_action.c_str());
+        g_menu_append_item(preset_menu, menu_item);
+        g_object_unref(menu_item);
 
-void plugin_gui_window::fill_gui_presets(bool builtin, char &ch)
-{
-    GtkActionGroup *&preset_actions = builtin ? builtin_preset_actions : user_preset_actions;
-    if(preset_actions) {
-        gtk_ui_manager_remove_action_group(ui_mgr, preset_actions);
-        preset_actions = NULL;
+        GSimpleAction *act = g_simple_action_new(action_name.c_str(), NULL);
+        activate_preset_params *params = new activate_preset_params(pai, i, builtin);
+        g_signal_connect_data(act, "activate", G_CALLBACK(activate_preset),
+                              params, (GClosureNotify)activate_preset_params::action_destroy_notify, (GConnectFlags)0);
+        g_action_map_add_action(G_ACTION_MAP(win_actions), G_ACTION(act));
+        g_object_unref(act);
     }
-    
-    if (builtin)
-        builtin_preset_actions = gtk_action_group_new("builtin_presets");
-    else
-        user_preset_actions = gtk_action_group_new("user_presets");
-    string preset_xml = make_gui_preset_list(preset_actions, builtin, ch);
-    gtk_ui_manager_insert_action_group(ui_mgr, preset_actions, 0);    
-    GError *error = NULL;
-    gtk_ui_manager_add_ui_from_string(ui_mgr, preset_xml.c_str(), -1, &error);
+    g_object_unref(preset_menu_model);
 }
 
 void plugin_gui_window::create(plugin_ctl_iface *_jh, const char *title, const char *effect)
 {
     prefix = "gui";
-    GtkWidget *win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+    GtkWidget *win = gtk_window_new();
     gtk_window_set_icon_name(GTK_WINDOW(win), "calf_plugin");
-    gtk_window_set_type_hint(GTK_WINDOW(win), GDK_WINDOW_TYPE_HINT_NORMAL);
-    gtk_window_set_role(GTK_WINDOW(win), "calf_plugin");
-    
-    GtkVBox *vbox = GTK_VBOX(gtk_vbox_new(false, 0));
-    
+
+    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+
     GtkRequisition req, req2;
-    gtk_window_set_title(GTK_WINDOW (win), title);
-    gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(vbox));
-    
+    gtk_window_set_title(GTK_WINDOW(win), title);
+    gtk_window_set_child(GTK_WINDOW(win), GTK_WIDGET(vbox));
+
     create_gui(_jh);
 
     gui->effect_name = effect;
     gtk_widget_set_name(GTK_WIDGET(vbox), "Calf-Plugin");
     GtkWidget *decoTable = decorate(container);
-    
-    GtkWidget *eventbox  = gtk_event_box_new();
-    gtk_widget_set_name( GTK_WIDGET(eventbox), "Calf-Plugin" );
-    gtk_container_add( GTK_CONTAINER(eventbox), decoTable );
-    
-    gtk_widget_show(eventbox);
-    
-    ui_mgr = gtk_ui_manager_new();
-    std_actions = gtk_action_group_new("default");
-    gtk_action_group_add_actions(std_actions, actions, sizeof(actions)/sizeof(actions[0]), this);
-    GError *error = NULL;
-    gtk_ui_manager_insert_action_group(ui_mgr, std_actions, 0);
-    gtk_ui_manager_add_ui_from_string(ui_mgr, ui_xml, -1, &error);
-    
-    command_actions = gtk_action_group_new("commands");
-    string command_xml = make_gui_command_list(command_actions, _jh->get_metadata_iface());
-    gtk_ui_manager_insert_action_group(ui_mgr, command_actions, 0);
-    gtk_ui_manager_add_ui_from_string(ui_mgr, command_xml.c_str(), -1, &error);
+
+    // Replace GtkEventBox with a plain GtkBox
+    GtkWidget *eventbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_widget_set_name(GTK_WIDGET(eventbox), "Calf-Plugin");
+    gtk_box_append(GTK_BOX(eventbox), decoTable);
+
+    gtk_widget_set_visible(eventbox, TRUE);
+
+    // Build menu with GMenu + GSimpleActionGroup
+    win_actions = g_simple_action_group_new();
+
+    // Store-preset action
+    GSimpleAction *act_store = g_simple_action_new("store-preset", NULL);
+    g_signal_connect(act_store, "activate", G_CALLBACK(store_preset_action), this);
+    g_action_map_add_action(G_ACTION_MAP(win_actions), G_ACTION(act_store));
+    g_object_unref(act_store);
+
+    // About action
+    GSimpleAction *act_about = g_simple_action_new("about", NULL);
+    g_signal_connect(act_about, "activate", G_CALLBACK(about_action), this);
+    g_action_map_add_action(G_ACTION_MAP(win_actions), G_ACTION(act_about));
+    g_object_unref(act_about);
+
+    // Help action
+    GSimpleAction *act_help = g_simple_action_new("help", NULL);
+    g_signal_connect(act_help, "activate", G_CALLBACK(help_action), this);
+    g_action_map_add_action(G_ACTION_MAP(win_actions), G_ACTION(act_help));
+    g_object_unref(act_help);
+
+    // Tips & Tricks action
+    GSimpleAction *act_tips = g_simple_action_new("tips-tricks", NULL);
+    g_signal_connect(act_tips, "activate", G_CALLBACK(tips_tricks_action), this);
+    g_action_map_add_action(G_ACTION_MAP(win_actions), G_ACTION(act_tips));
+    g_object_unref(act_tips);
+
+    // Add command actions
+    plugin_command_info *ci = _jh->get_metadata_iface()->get_commands();
+    if (ci)
+    {
+        for (int i = 0; ci->name; i++, ci++)
+        {
+            GSimpleAction *act_cmd = g_simple_action_new(ci->label, NULL);
+            g_signal_connect_data(act_cmd, "activate", G_CALLBACK(activate_command),
+                                  (gpointer)new activate_command_params(gui, i),
+                                  (GClosureNotify)[](gpointer d, GClosure*){ delete (activate_command_params*)d; },
+                                  (GConnectFlags)0);
+            g_action_map_add_action(G_ACTION_MAP(win_actions), G_ACTION(act_cmd));
+            g_object_unref(act_cmd);
+        }
+    }
+
+    gtk_widget_insert_action_group(win, "win", G_ACTION_GROUP(win_actions));
+
+    // Build GMenu model
+    menu_model = g_menu_new();
+
+    GMenu *preset_submenu = g_menu_new();
+    g_menu_append(preset_submenu, "Store preset", "win.store-preset");
 
     char ch = '0';
+    // We need preset_submenu attached before fill_gui_presets can find it
+    GMenuItem *preset_item = g_menu_item_new_submenu("_Preset", G_MENU_MODEL(preset_submenu));
+    g_menu_append_item(menu_model, preset_item);
+    g_object_unref(preset_item);
+    g_object_unref(preset_submenu);
+
     fill_gui_presets(true, ch);
     fill_gui_presets(false, ch);
-    
-    gtk_box_pack_start(GTK_BOX(vbox), gtk_ui_manager_get_widget(ui_mgr, "/ui/menubar"), false, false, 0);
-    gtk_widget_set_name(GTK_WIDGET(gtk_ui_manager_get_widget(ui_mgr, "/ui/menubar")), "Calf-Menu");
-    
-    // determine size without content
-    gtk_widget_show_all(GTK_WIDGET(vbox));
-    gtk_widget_size_request(GTK_WIDGET(vbox), &req2);
-    
-    GtkWidget *sw = gtk_scrolled_window_new(NULL, NULL);
-    gtk_widget_show(GTK_WIDGET(sw));
+
+    // Commands submenu
+    ci = _jh->get_metadata_iface()->get_commands();
+    if (ci && ci->name)
+    {
+        GMenu *cmd_menu = g_menu_new();
+        plugin_command_info *ci2 = _jh->get_metadata_iface()->get_commands();
+        for (; ci2->name; ci2++)
+        {
+            string action_str = string("win.") + ci2->label;
+            g_menu_append(cmd_menu, ci2->name, action_str.c_str());
+        }
+        GMenuItem *cmd_item = g_menu_item_new_submenu("_Commands", G_MENU_MODEL(cmd_menu));
+        g_menu_append_item(menu_model, cmd_item);
+        g_object_unref(cmd_item);
+        g_object_unref(cmd_menu);
+    }
+
+    // Help menu
+    GMenu *help_menu = g_menu_new();
+    g_menu_append(help_menu, "_Help", "win.help");
+    g_menu_append(help_menu, "_Tips and tricks...", "win.tips-tricks");
+    g_menu_append(help_menu, "_About...", "win.about");
+    GMenuItem *help_item = g_menu_item_new_submenu("_Help", G_MENU_MODEL(help_menu));
+    g_menu_append_item(menu_model, help_item);
+    g_object_unref(help_item);
+    g_object_unref(help_menu);
+
+    GtkWidget *menubar = gtk_popover_menu_bar_new_from_model(G_MENU_MODEL(menu_model));
+    gtk_widget_set_name(menubar, "Calf-Menu");
+    gtk_box_append(GTK_BOX(vbox), menubar);
+
+    // Determine size without content
+    gtk_widget_set_visible(GTK_WIDGET(vbox), TRUE);
+    gtk_widget_measure(GTK_WIDGET(vbox), GTK_ORIENTATION_HORIZONTAL, -1, NULL, &req2.width, NULL, NULL);
+    gtk_widget_measure(GTK_WIDGET(vbox), GTK_ORIENTATION_VERTICAL,   -1, NULL, &req2.height, NULL, NULL);
+
+    GtkWidget *sw = gtk_scrolled_window_new();
+    gtk_widget_set_visible(GTK_WIDGET(sw), TRUE);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-    gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(sw), GTK_SHADOW_NONE);
-    gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(sw), GTK_WIDGET(eventbox));
+    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(sw), GTK_WIDGET(eventbox));
     gtk_widget_set_name(GTK_WIDGET(sw), "Calf-Container");
-    gtk_box_pack_start(GTK_BOX(vbox), sw, true, true, 0);
-    
+    gtk_widget_set_vexpand(sw, TRUE);
+    gtk_box_append(GTK_BOX(vbox), sw);
+
     show_rack_ears(environment->get_config()->rack_ears);
-    
-    gtk_widget_size_request(GTK_WIDGET(container), &req);
+
+    gtk_widget_measure(GTK_WIDGET(container), GTK_ORIENTATION_HORIZONTAL, -1, NULL, &req.width,  NULL, NULL);
+    gtk_widget_measure(GTK_WIDGET(container), GTK_ORIENTATION_VERTICAL,   -1, NULL, &req.height, NULL, NULL);
     int wx = max(req.width + 10, req2.width);
     int wy = req.height + req2.height + 10;
     gtk_window_set_default_size(GTK_WINDOW(win), wx, wy);
-    gtk_window_resize(GTK_WINDOW(win), wx, wy);
+    gtk_window_set_default_size(GTK_WINDOW(win), wx, wy);
     g_signal_connect (GTK_WIDGET(win), "destroy", G_CALLBACK (on_window_destroyed), (plugin_gui_widget *)this);
     if (main)
         main->set_window(gui->plugin, this);
 
-    gtk_ui_manager_ensure_update(ui_mgr);
     toplevel = win;
     notifier = environment->get_config_db()->add_listener(this);
 }
@@ -451,43 +484,77 @@ void plugin_gui_window::on_config_change()
 
 void plugin_gui_window::close()
 {
-    gtk_widget_destroy(toplevel);
+    gtk_window_destroy(GTK_WINDOW(toplevel));
+}
+
+static GtkWidget *image_from_pixbuf(GdkPixbuf *pb)
+{
+    if (!pb)
+        return gtk_image_new();
+    int w      = gdk_pixbuf_get_width(pb);
+    int h      = gdk_pixbuf_get_height(pb);
+    int nc     = gdk_pixbuf_get_n_channels(pb);
+    int stride = gdk_pixbuf_get_rowstride(pb);
+    GdkMemoryFormat fmt = (nc == 4) ? GDK_MEMORY_R8G8B8A8 : GDK_MEMORY_R8G8B8;
+    GBytes *bytes = g_bytes_new(gdk_pixbuf_get_pixels(pb), (gsize)h * stride);
+    GdkTexture *tex = gdk_memory_texture_new(w, h, fmt, bytes, stride);
+    g_bytes_unref(bytes);
+    GtkWidget *img = gtk_image_new_from_paintable(GDK_PAINTABLE(tex));
+    g_object_unref(tex);
+    return img;
 }
 
 GtkWidget *plugin_gui_window::decorate(GtkWidget *widget) {
-    GtkWidget *decoTable = gtk_table_new(3, 1, FALSE);
-    
+    GtkWidget *decoTable = gtk_grid_new();
+
     // images for left side
-    GtkWidget *nwImg     = gtk_image_new_from_pixbuf(environment->get_image_factory()->get("side_nw"));
-    GtkWidget *swImg     = gtk_image_new_from_pixbuf(environment->get_image_factory()->get("side_sw"));
-    
+    GtkWidget *nwImg     = image_from_pixbuf(environment->get_image_factory()->get("side_nw"));
+    GtkWidget *swImg     = image_from_pixbuf(environment->get_image_factory()->get("side_sw"));
+
     // images for right side
-    GtkWidget *neImg     = gtk_image_new_from_pixbuf(environment->get_image_factory()->get("side_ne"));
-    GtkWidget *seImg     = gtk_image_new_from_pixbuf(environment->get_image_factory()->get("side_se"));
-    
-    // pack left box
-    leftBG = gtk_event_box_new();
-    GtkWidget *leftBox = gtk_vbox_new(FALSE, 0);
-    gtk_container_add(GTK_CONTAINER(leftBG), leftBox);
-    gtk_box_pack_start(GTK_BOX(leftBox), GTK_WIDGET(nwImg), FALSE, FALSE, 0);
-    gtk_box_pack_end(GTK_BOX(leftBox), GTK_WIDGET(swImg), FALSE, FALSE, 0);
+    GtkWidget *neImg     = image_from_pixbuf(environment->get_image_factory()->get("side_ne"));
+    GtkWidget *seImg     = image_from_pixbuf(environment->get_image_factory()->get("side_se"));
+
+    // pack left box — replace GtkEventBox with GtkBox
+    leftBG = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    GtkWidget *leftBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_box_append(GTK_BOX(leftBG), leftBox);
+    gtk_box_append(GTK_BOX(leftBox), GTK_WIDGET(nwImg));
+    // prepend swImg so it goes to the "end"
+    GtkWidget *leftBoxSpacer = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_widget_set_vexpand(leftBoxSpacer, TRUE);
+    gtk_box_append(GTK_BOX(leftBox), leftBoxSpacer);
+    gtk_box_append(GTK_BOX(leftBox), GTK_WIDGET(swImg));
     gtk_widget_set_name(leftBG, "CalfPluginLeft");
-    
-    // pack right box
-    rightBG  = gtk_event_box_new();
-    GtkWidget *rightBox = gtk_vbox_new(FALSE, 0);
-    gtk_container_add(GTK_CONTAINER(rightBG), rightBox);
-    gtk_box_pack_start(GTK_BOX(rightBox), GTK_WIDGET(neImg), FALSE, FALSE, 0);
-    gtk_box_pack_end(GTK_BOX(rightBox), GTK_WIDGET(seImg), FALSE, FALSE, 0);
+
+    // pack right box — replace GtkEventBox with GtkBox
+    rightBG = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    GtkWidget *rightBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_box_append(GTK_BOX(rightBG), rightBox);
+    gtk_box_append(GTK_BOX(rightBox), GTK_WIDGET(neImg));
+    GtkWidget *rightBoxSpacer = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_widget_set_vexpand(rightBoxSpacer, TRUE);
+    gtk_box_append(GTK_BOX(rightBox), rightBoxSpacer);
+    gtk_box_append(GTK_BOX(rightBox), GTK_WIDGET(seImg));
     gtk_widget_set_name(rightBG, "CalfPluginRight");
-    
-    //gtk_table_attach(GTK_TABLE(decoTable), GTK_WIDGET(bgImg),     0, 2, 0, 2, (GtkAttachOptions)(GTK_EXPAND | GTK_SHRINK | GTK_FILL), (GtkAttachOptions)(GTK_EXPAND | GTK_SHRINK | GTK_FILL), 0, 0);
-    gtk_table_attach(GTK_TABLE(decoTable), GTK_WIDGET(leftBG),   0, 1, 0, 1, (GtkAttachOptions)(0), (GtkAttachOptions)(GTK_EXPAND | GTK_FILL), 0, 0);
-    gtk_table_attach(GTK_TABLE(decoTable), GTK_WIDGET(rightBG),  2, 3, 0, 1, (GtkAttachOptions)(0), (GtkAttachOptions)(GTK_EXPAND | GTK_FILL), 0, 0);
-        
-    gtk_table_attach(GTK_TABLE(decoTable), widget, 1, 2, 0, 1, (GtkAttachOptions)(GTK_EXPAND | GTK_FILL), (GtkAttachOptions)(GTK_EXPAND | GTK_FILL), 15, 5);
-    
-    gtk_widget_show_all(decoTable);
+
+    // gtk_table_attach equivalents using gtk_grid_attach(grid, child, col, row, w, h)
+    // left column: col=0, row=0, span 1x1
+    gtk_widget_set_vexpand(leftBG, TRUE);
+    gtk_grid_attach(GTK_GRID(decoTable), GTK_WIDGET(leftBG),  0, 0, 1, 1);
+    // right column: col=2, row=0
+    gtk_widget_set_vexpand(rightBG, TRUE);
+    gtk_grid_attach(GTK_GRID(decoTable), GTK_WIDGET(rightBG), 2, 0, 1, 1);
+    // content: col=1, row=0, with margins
+    gtk_widget_set_hexpand(widget, TRUE);
+    gtk_widget_set_vexpand(widget, TRUE);
+    gtk_widget_set_margin_start(widget, 15);
+    gtk_widget_set_margin_end(widget, 15);
+    gtk_widget_set_margin_top(widget, 5);
+    gtk_widget_set_margin_bottom(widget, 5);
+    gtk_grid_attach(GTK_GRID(decoTable), widget,              1, 0, 1, 1);
+
+    gtk_widget_set_visible(decoTable, TRUE);
     return GTK_WIDGET(decoTable);
 }
 
@@ -496,17 +563,15 @@ void plugin_gui_window::show_rack_ears(bool show)
 {
     // if hidden, add a no-show-all attribute so that LV2 host doesn't accidentally override
     // the setting by doing a show_all on the outermost container
-    gtk_widget_set_no_show_all(leftBG, !show);
-    gtk_widget_set_no_show_all(rightBG, !show);
     if (show)
     {
-        gtk_widget_show(leftBG);
-        gtk_widget_show(rightBG);
+        gtk_widget_set_visible(leftBG, TRUE);
+        gtk_widget_set_visible(rightBG, TRUE);
     }
     else
     {
-        gtk_widget_hide(leftBG);
-        gtk_widget_hide(rightBG);
+        gtk_widget_set_visible(leftBG, FALSE);
+        gtk_widget_set_visible(rightBG, FALSE);
     }
 }
 plugin_gui_window::~plugin_gui_window()
@@ -515,6 +580,16 @@ plugin_gui_window::~plugin_gui_window()
     {
         delete notifier;
         notifier = NULL;
+    }
+    if (win_actions)
+    {
+        g_object_unref(win_actions);
+        win_actions = NULL;
+    }
+    if (menu_model)
+    {
+        g_object_unref(menu_model);
+        menu_model = NULL;
     }
     if (main)
         main->set_window(gui->plugin, NULL);

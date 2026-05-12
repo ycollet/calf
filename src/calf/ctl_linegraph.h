@@ -76,8 +76,8 @@ struct FreqHandle
 struct CalfLineGraph
 {
     static const int debug = 0; // 0 - 3
-    
-    GtkEventBox parent;
+
+    GtkWidget parent;
     const calf_plugins::line_graph_iface *source;
     int source_id;
     bool force_cache;
@@ -122,7 +122,7 @@ struct CalfLineGraph
 
 struct CalfLineGraphClass
 {
-    GtkEventBoxClass parent_class;
+    GtkWidgetClass parent_class;
 };
 
 extern GtkWidget *calf_line_graph_new();

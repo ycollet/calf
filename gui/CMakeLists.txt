@@ -18,8 +18,15 @@ foreach(f ${STYLES})
     # Process and install gtk.rc
     set(guidatadir "${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}/styles/${sn}")
     configure_file("${f}/gtk.rc.in" "${CMAKE_CURRENT_BINARY_DIR}/styles/${sn}/gtk.rc" @ONLY)
-    
+
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/styles/${sn}/gtk.rc"
         DESTINATION "share/${PROJECT_NAME}/styles/${sn}")
+
+    # Process and install gtk.css
+    if(EXISTS "${f}/gtk.css.in")
+        configure_file("${f}/gtk.css.in" "${CMAKE_CURRENT_BINARY_DIR}/styles/${sn}/gtk.css" @ONLY)
+        install(FILES "${CMAKE_CURRENT_BINARY_DIR}/styles/${sn}/gtk.css"
+            DESTINATION "share/${PROJECT_NAME}/styles/${sn}")
+    endif()
 endforeach()
 

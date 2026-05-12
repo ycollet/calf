@@ -94,12 +94,12 @@ extern GType calf_toggle_button_get_type();
 
 struct CalfRadioButton
 {
-    GtkRadioButton parent;
+    GtkCheckButton parent;
 };
 
 struct CalfRadioButtonClass
 {
-    GtkRadioButtonClass parent_class;
+    GtkCheckButtonClass parent_class;
 };
 
 extern GtkWidget *calf_radio_button_new(const gchar *label);
