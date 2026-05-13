@@ -116,7 +116,7 @@ calf_tuner_snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
     float fsize = fpt * sy / 25; // 9pt @ 25px height
 
     // obtain a cairo context from the snapshot
-    graphene_rect_t bounds = GRAPHENE_RECT_INIT(0, 0, width, height);
+    graphene_rect_t bounds = GRAPHENE_RECT_INIT(0, 0, (float)width, (float)height);
     cairo_t *c = gtk_snapshot_append_cairo(snapshot, &bounds);
     cairo_t *ctx_back;
 

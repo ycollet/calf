@@ -73,7 +73,7 @@ calf_toggle_snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
     float x = wcx - pcx;
     float y = wcy - pcy;
 
-    graphene_rect_t bounds = GRAPHENE_RECT_INIT(0, 0, gtk_widget_get_width(widget), gtk_widget_get_height(widget));
+    graphene_rect_t bounds = GRAPHENE_RECT_INIT(0, 0, (float)gtk_widget_get_width(widget), (float)gtk_widget_get_height(widget));
     cairo_t *c = gtk_snapshot_append_cairo(snapshot, &bounds);
     calf_cairo_set_source_pixbuf(c, self->toggle_image, x - 0, y - sy);
     cairo_rectangle(c, x, y, pw, ph / 2);
@@ -253,7 +253,7 @@ calf_button_snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
         int width  = gtk_widget_get_width(widget);
         int height = gtk_widget_get_height(widget);
 
-        graphene_rect_t bounds = GRAPHENE_RECT_INIT(0, 0, gtk_widget_get_width(widget), gtk_widget_get_height(widget));
+        graphene_rect_t bounds = GRAPHENE_RECT_INIT(0, 0, (float)gtk_widget_get_width(widget), (float)gtk_widget_get_height(widget));
         cairo_t *c = gtk_snapshot_append_cairo(snapshot, &bounds);
 
         int x  = 0;
@@ -514,7 +514,7 @@ calf_tap_button_snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
     int x = 0 + width / 2 - img_width / 2;
     int y = 0 + height / 2 - img_height / 2;
 
-    graphene_rect_t bounds = GRAPHENE_RECT_INIT(0, 0, gtk_widget_get_width(widget), gtk_widget_get_height(widget));
+    graphene_rect_t bounds = GRAPHENE_RECT_INIT(0, 0, (float)gtk_widget_get_width(widget), (float)gtk_widget_get_height(widget));
     cairo_t *c = gtk_snapshot_append_cairo(snapshot, &bounds);
     calf_cairo_set_source_pixbuf(c, self->image[self->state], x - 0, y - 0);
     cairo_rectangle(c, x, y, img_width, img_height);

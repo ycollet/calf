@@ -46,7 +46,7 @@ calf_keyboard_snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
     int height = gtk_widget_get_height(widget);
     int sy = height - 1;
 
-    graphene_rect_t bounds = GRAPHENE_RECT_INIT(0, 0, width, height);
+    graphene_rect_t bounds = GRAPHENE_RECT_INIT(0, 0, (float)width, (float)height);
     cairo_t *c = gtk_snapshot_append_cairo(snapshot, &bounds);
 
     cairo_set_line_join(c, CAIRO_LINE_JOIN_MITER);

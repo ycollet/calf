@@ -38,7 +38,7 @@ calf_tube_snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
     int width  = gtk_widget_get_width(widget);
     int height = gtk_widget_get_height(widget);
 
-    graphene_rect_t bounds = GRAPHENE_RECT_INIT(0, 0, width, height);
+    graphene_rect_t bounds = GRAPHENE_RECT_INIT(0, 0, (float)width, (float)height);
     cairo_t *c = gtk_snapshot_append_cairo(snapshot, &bounds);
 
     int ox = 4, oy = 4, inner = 1, pad;

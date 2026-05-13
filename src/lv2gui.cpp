@@ -367,7 +367,7 @@ LV2UI_Handle gui_instantiate(const struct _LV2UI_Descriptor* descriptor,
         GtkWidget *eventbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
         gtk_widget_set_name(GTK_WIDGET(eventbox), "Calf-Plugin");
         gtk_box_append(GTK_BOX(eventbox), decoTable);
-        gtk_widget_show(eventbox);
+        gtk_widget_set_visible(eventbox, TRUE);
         gui->optwidget = eventbox;
         proxy->source_id = g_timeout_add_full(G_PRIORITY_LOW, 1000/30, plugin_on_idle, gui, NULL); // 30 fps should be enough for everybody
         proxy->widget_destroyed_signal = g_signal_connect(G_OBJECT(gui->optwidget), "destroy", G_CALLBACK(on_gui_widget_destroy), (gpointer)gui);
@@ -447,8 +447,8 @@ void gui_cleanup(LV2UI_Handle handle)
         free((void*)gui->opttitle);
 
         // idle is no longer called after this, so make sure all events are handled now
-        while (gtk_events_pending())
-            gtk_main_iteration();
+        while (g_main_context_pending(NULL))
+            g_main_context_iteration(NULL, FALSE);
     }
 
     delete gui;
@@ -517,7 +517,6 @@ int gui_show(LV2UI_Handle handle)
         gtk_window_set_resizable(GTK_WINDOW(gui->optwindow), false);
     }
 
-    gtk_widget_show(gui->optwindow);
     gtk_window_present(GTK_WINDOW(gui->optwindow));
 
     return 0;
@@ -533,14 +532,13 @@ int gui_hide(LV2UI_Handle handle)
         g_signal_handler_disconnect(gui->optwindow, proxy->window_destroyed_signal);
         proxy->window_destroyed_signal = 0;
 
-        gtk_widget_hide(gui->optwindow);
         gtk_window_destroy(GTK_WINDOW(gui->optwindow));
         gui->optwindow = NULL;
         gui->optclosed = true;
 
         // idle is no longer called after this, so make sure all events are handled now
-        while (gtk_events_pending())
-            gtk_main_iteration();
+        while (g_main_context_pending(NULL))
+            g_main_context_iteration(NULL, FALSE);
     }
 
     return 0;
@@ -555,8 +553,8 @@ int gui_idle(LV2UI_Handle handle)
 
     if (gui->optwindow)
     {
-        while (gtk_events_pending())
-            gtk_main_iteration();
+        while (g_main_context_pending(NULL))
+            g_main_context_iteration(NULL, FALSE);
     }
 
     return 0;

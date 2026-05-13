@@ -49,7 +49,7 @@ calf_led_snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
     int yc = height / 2;
     float r, g, b;
 
-    graphene_rect_t bounds = GRAPHENE_RECT_INIT(0, 0, width, height);
+    graphene_rect_t bounds = GRAPHENE_RECT_INIT(0, 0, (float)width, (float)height);
     cairo_t *c = gtk_snapshot_append_cairo(snapshot, &bounds);
 
     if( self->cache_surface == NULL ) {

@@ -45,7 +45,7 @@ calf_meter_scale_snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
         int width  = gtk_widget_get_width(widget);
         int height = gtk_widget_get_height(widget);
 
-        graphene_rect_t bounds = GRAPHENE_RECT_INIT(0, 0, width, height);
+        graphene_rect_t bounds = GRAPHENE_RECT_INIT(0, 0, (float)width, (float)height);
         cairo_t *cr = gtk_snapshot_append_cairo(snapshot, &bounds);
         cairo_text_extents_t extents;
 
