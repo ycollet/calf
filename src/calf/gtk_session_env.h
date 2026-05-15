@@ -26,6 +26,7 @@ namespace calf_plugins
 
 class gtk_session_environment: public session_environment_iface
 {
+    GMainLoop *main_loop = nullptr;
 public:
     virtual void init_gui(int &argc, char **&argv);
     virtual void start_gui_loop();

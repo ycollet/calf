@@ -251,9 +251,10 @@ static void on_gesture_pressed(GtkGestureClick *gesture, gint n_press, gdouble x
         if (surface) {
             double ox = 0, oy = 0;
             graphene_point_t src_pt = GRAPHENE_POINT_INIT((float)x, (float)y);
-            graphene_point_t dest_pt = GRAPHENE_POINT_INIT((float)x, (float)y);
-            (void)gtk_widget_compute_point(widget, GTK_WIDGET(gtk_widget_get_root(widget)),
-                &src_pt, &dest_pt);
+            graphene_point_t dest_pt = src_pt;
+            if (!gtk_widget_compute_point(widget, GTK_WIDGET(gtk_widget_get_root(widget)),
+                    &src_pt, &dest_pt))
+                dest_pt = src_pt;
             ox = dest_pt.x;
             oy = dest_pt.y;
             rx = ox;

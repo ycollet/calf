@@ -25,9 +25,9 @@
 
 using namespace calf_plugins;
 
-void gtk_session_environment::init_gui(int &argc, char **&argv)
+void gtk_session_environment::init_gui(int &/*argc*/, char **&/*argv*/)
 {
-    gtk_init(&argc, &argv);
+    gtk_init();
 }
 
 main_window_iface *gtk_session_environment::create_main_window()
@@ -37,12 +37,16 @@ main_window_iface *gtk_session_environment::create_main_window()
 
 void gtk_session_environment::start_gui_loop()
 {
-    gtk_main();
+    main_loop = g_main_loop_new(NULL, FALSE);
+    g_main_loop_run(main_loop);
+    g_main_loop_unref(main_loop);
+    main_loop = nullptr;
 }
 
 void gtk_session_environment::quit_gui_loop()
 {
-    gtk_main_quit();
+    if (main_loop)
+        g_main_loop_quit(main_loop);
 }
 
 gtk_session_environment::~gtk_session_environment()
