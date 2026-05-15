@@ -73,6 +73,7 @@ GtkWidget *plugin_gui_widget::create(plugin_ctl_iface *_jh)
 {
     create_gui(_jh);
     gtk_widget_set_name(container, "Calf-Plugin-Strip");
+    gtk_widget_add_css_class(container, "Calf-Plugin-Strip");
     gtk_widget_set_visible(container, TRUE);
     toplevel = container;
     g_signal_connect (GTK_WIDGET(toplevel), "destroy", G_CALLBACK (on_window_destroyed), (plugin_gui_widget *)this);
@@ -346,11 +347,13 @@ void plugin_gui_window::create(plugin_ctl_iface *_jh, const char *title, const c
 
     gui->effect_name = effect;
     gtk_widget_set_name(GTK_WIDGET(vbox), "Calf-Plugin");
+    gtk_widget_add_css_class(GTK_WIDGET(vbox), "Calf-Plugin");
     GtkWidget *decoTable = decorate(container);
 
     // Replace GtkEventBox with a plain GtkBox
     GtkWidget *eventbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_widget_set_name(GTK_WIDGET(eventbox), "Calf-Plugin");
+    gtk_widget_add_css_class(GTK_WIDGET(eventbox), "Calf-Plugin");
     gtk_box_append(GTK_BOX(eventbox), decoTable);
 
     gtk_widget_set_visible(eventbox, TRUE);
@@ -445,6 +448,7 @@ void plugin_gui_window::create(plugin_ctl_iface *_jh, const char *title, const c
 
     GtkWidget *menubar = gtk_popover_menu_bar_new_from_model(G_MENU_MODEL(menu_model));
     gtk_widget_set_name(menubar, "Calf-Menu");
+    gtk_widget_add_css_class(menubar, "Calf-Menu");
     gtk_box_append(GTK_BOX(vbox), menubar);
 
     // Determine size without content
@@ -457,6 +461,7 @@ void plugin_gui_window::create(plugin_ctl_iface *_jh, const char *title, const c
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
     gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(sw), GTK_WIDGET(eventbox));
     gtk_widget_set_name(GTK_WIDGET(sw), "Calf-Container");
+    gtk_widget_add_css_class(GTK_WIDGET(sw), "Calf-Container");
     gtk_widget_set_vexpand(sw, TRUE);
     gtk_box_append(GTK_BOX(vbox), sw);
 
@@ -526,6 +531,7 @@ GtkWidget *plugin_gui_window::decorate(GtkWidget *widget) {
     gtk_box_append(GTK_BOX(leftBox), leftBoxSpacer);
     gtk_box_append(GTK_BOX(leftBox), GTK_WIDGET(swImg));
     gtk_widget_set_name(leftBG, "CalfPluginLeft");
+    gtk_widget_add_css_class(leftBG, "CalfPluginLeft");
 
     // pack right box — replace GtkEventBox with GtkBox
     rightBG = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
@@ -537,6 +543,7 @@ GtkWidget *plugin_gui_window::decorate(GtkWidget *widget) {
     gtk_box_append(GTK_BOX(rightBox), rightBoxSpacer);
     gtk_box_append(GTK_BOX(rightBox), GTK_WIDGET(seImg));
     gtk_widget_set_name(rightBG, "CalfPluginRight");
+    gtk_widget_add_css_class(rightBG, "CalfPluginRight");
 
     // gtk_table_attach equivalents using gtk_grid_attach(grid, child, col, row, w, h)
     // left column: col=0, row=0, span 1x1

@@ -331,6 +331,7 @@ GtkWidget *gtk_main_window::create_meter_scale() {
     ms->dots     = 1;
     ms->position = 2;
     gtk_widget_set_name(vu, "Calf-MeterScale");
+    gtk_widget_add_css_class(vu, "Calf-MeterScale");
     return vu;
 }
 
@@ -388,6 +389,7 @@ plugin_strip *gtk_main_window::create_strip(jack_host *plugin)
     GtkWidget *leftBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_box_append(GTK_BOX(leftBG), leftBox);
     gtk_widget_set_name(leftBG, "CalfMainLeft");
+    gtk_widget_add_css_class(leftBG, "CalfMainLeft");
     gtk_box_append(GTK_BOX(leftBox), GTK_WIDGET(nwImg));
     gtk_box_prepend(GTK_BOX(leftBox), GTK_WIDGET(swImg));
     gtk_widget_set_visible(GTK_WIDGET(leftBG), TRUE);
@@ -401,6 +403,7 @@ plugin_strip *gtk_main_window::create_strip(jack_host *plugin)
     GtkWidget *rightBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_box_append(GTK_BOX(rightBG), rightBox);
     gtk_widget_set_name(rightBG, "CalfMainRight");
+    gtk_widget_add_css_class(rightBG, "CalfMainRight");
     gtk_box_append(GTK_BOX(rightBox), GTK_WIDGET(neImg));
     gtk_box_prepend(GTK_BOX(rightBox), GTK_WIDGET(seImg));
     gtk_widget_set_visible(GTK_WIDGET(rightBG), TRUE);
@@ -433,6 +436,7 @@ plugin_strip *gtk_main_window::create_strip(jack_host *plugin)
     // title @ column 2, row 1
     strip->name = gtk_label_new(NULL);
     gtk_widget_set_name(GTK_WIDGET(strip->name), "Calf-Rack-Title");
+    gtk_widget_add_css_class(GTK_WIDGET(strip->name), "Calf-Rack-Title");
     gtk_label_set_markup(GTK_LABEL(strip->name), plugin->instance_name.c_str());
     gtk_label_set_justify(GTK_LABEL(strip->name), GTK_JUSTIFY_RIGHT);
 
@@ -454,6 +458,7 @@ plugin_strip *gtk_main_window::create_strip(jack_host *plugin)
     strip->entry = gtk_entry_new();
     gtk_editable_set_text(GTK_EDITABLE(strip->entry), "Calf-Rack-Entry");
     gtk_widget_set_name(strip->entry, "Calf-Rack-Entry");
+    gtk_widget_add_css_class(strip->entry, "Calf-Rack-Entry");
     gtk_widget_set_size_request(strip->entry, 180, -1);
     gtk_widget_set_margin_start(strip->entry, 10);
     gtk_widget_set_margin_end(strip->entry, 10);
@@ -903,6 +908,7 @@ void gtk_main_window::create()
     GtkWidget *menubar = gtk_popover_menu_bar_new_from_model(G_MENU_MODEL(menu_model));
     gtk_widget_set_size_request(menubar, 640, -1);
     gtk_widget_set_name(menubar, "Calf-Menu");
+    gtk_widget_add_css_class(menubar, "Calf-Menu");
     gtk_box_append(GTK_BOX(all_vbox), menubar);
 
     // Keyboard shortcuts
@@ -932,6 +938,7 @@ void gtk_main_window::create()
 
     GtkWidget *evbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_widget_set_name(evbox, "Calf-Rack");
+    gtk_widget_add_css_class(evbox, "Calf-Rack");
     gtk_widget_set_can_focus(evbox, TRUE);
     GtkGesture *rack_gesture = gtk_gesture_click_new();
     g_signal_connect(rack_gesture, "pressed", G_CALLBACK(on_table_clicked), NULL);
@@ -941,6 +948,7 @@ void gtk_main_window::create()
     gtk_window_set_child(GTK_WINDOW(toplevel), all_vbox);
 
     gtk_widget_set_name(GTK_WIDGET(strips_table), "Calf-Container");
+    gtk_widget_add_css_class(GTK_WIDGET(strips_table), "Calf-Container");
 
     gtk_widget_set_visible(GTK_WIDGET(strips_table), TRUE);
     gtk_widget_set_visible(GTK_WIDGET(evbox), TRUE);
@@ -1245,9 +1253,14 @@ G_GNUC_END_IGNORE_DEPRECATIONS
     return store;
 }
 
+static void on_css_parse_error(GtkCssProvider *, GtkCssSection *, GError *error, gpointer) {
+    g_warning("CSS parse error: %s", error->message);
+}
+
 void gtk_main_window::load_style(std::string path) {
     std::string css_file = path + "/gtk.css";
     GtkCssProvider *css = gtk_css_provider_new();
+    g_signal_connect(css, "parsing-error", G_CALLBACK(on_css_parse_error), NULL);
     gtk_css_provider_load_from_path(css, css_file.c_str());
     gtk_style_context_add_provider_for_display(
         gdk_display_get_default(),

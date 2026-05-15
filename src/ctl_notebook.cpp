@@ -36,6 +36,7 @@ calf_notebook_new()
 {
     GtkWidget *nb = gtk_notebook_new();
     gtk_widget_set_name(nb, "CalfNotebook");
+    gtk_widget_add_css_class(nb, "CalfNotebook");
     return nb;
 }
 

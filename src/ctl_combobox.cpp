@@ -36,6 +36,7 @@ calf_combobox_new()
     GtkStringList *strings = gtk_string_list_new(NULL);
     GtkWidget *widget = gtk_drop_down_new(G_LIST_MODEL(strings), NULL);
     gtk_widget_set_name(widget, "CalfCombobox");
+    gtk_widget_add_css_class(widget, "CalfCombobox");
     return widget;
 }
 

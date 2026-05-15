@@ -16,7 +16,7 @@ foreach(f ${STYLES})
         DESTINATION "share/${PROJECT_NAME}/styles/${sn}" FILES_MATCHING PATTERN "*.png")
 
     # Process and install gtk.rc
-    set(guidatadir "${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}/styles/${sn}")
+    set(guidatadir "${CMAKE_INSTALL_FULL_DATADIR}/${PROJECT_NAME}/styles/${sn}")
     configure_file("${f}/gtk.rc.in" "${CMAKE_CURRENT_BINARY_DIR}/styles/${sn}/gtk.rc" @ONLY)
 
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/styles/${sn}/gtk.rc"

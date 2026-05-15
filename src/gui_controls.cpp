@@ -160,6 +160,7 @@ void control_base::set_std_properties()
     {
         string name = attribs["widget-name"];
         gtk_widget_set_name(widget, name.c_str());
+        gtk_widget_add_css_class(widget, name.c_str());
     }
     if (widget)
     {
@@ -402,6 +403,7 @@ GtkWidget *combo_box_param_control::create(plugin_gui *_gui, int _param_no)
     gtk_drop_down_set_model(GTK_DROP_DOWN(widget), G_LIST_MODEL(str_list));
     g_signal_connect(G_OBJECT(widget), "notify::selected", G_CALLBACK(combo_value_changed), (gpointer)this);
     gtk_widget_set_name(widget, "Calf-Combobox");
+    gtk_widget_add_css_class(widget, "calf-combobox");
     return widget;
 }
 
@@ -670,6 +672,7 @@ GtkWidget *label_param_control::create(plugin_gui *_gui, int _param_no)
     gtk_label_set_xalign(GTK_LABEL(widget), get_float("align-x", 0.5));
     gtk_label_set_yalign(GTK_LABEL(widget), get_float("align-y", 0.5));
     gtk_widget_set_name(GTK_WIDGET(widget), "Calf-Label");
+    gtk_widget_add_css_class(GTK_WIDGET(widget), "Calf-Label");
     return widget;
 }
 
@@ -698,6 +701,7 @@ GtkWidget *value_param_control::create(plugin_gui *_gui, int _param_no)
     gtk_label_set_xalign(GTK_LABEL(widget), get_float("align-x", 0.5));
     gtk_label_set_yalign(GTK_LABEL(widget), get_float("align-y", 0.5));
     gtk_widget_set_name(GTK_WIDGET(widget), "Calf-Value");
+    gtk_widget_add_css_class(GTK_WIDGET(widget), "Calf-Value");
     return widget;
 }
 
