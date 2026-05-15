@@ -12,4 +12,5 @@
 #cmakedefine JACK_HAS_RENAME 1
 #cmakedefine USE_LASH 1
 #cmakedefine USE_LASH_0_6 1
+#cmakedefine USE_NSM 1
 #cmakedefine ENABLE_EXPERIMENTAL 1

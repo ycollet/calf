@@ -60,12 +60,18 @@ if(USE_GUI)
     target_include_directories(${PROJECT_NAME}gui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     target_compile_options(${PROJECT_NAME}gui PRIVATE -Wno-c++11-narrowing)
     target_link_libraries(${PROJECT_NAME}gui PRIVATE Threads::Threads ${GTK_LIBRARIES} fluidsynth)
+    if(USE_JACK)
+        target_include_directories(${PROJECT_NAME}gui PRIVATE ${JACK_INCLUDE_DIRS})
+    endif()
 endif()
 
 
 if(USE_LV2 AND USE_GUI)
     add_library(${PROJECT_NAME}lv2gui gui.cpp gui_config.cpp gui_controls.cpp ctl_curve.cpp ctl_keyboard.cpp ctl_knob.cpp ctl_led.cpp ctl_tube.cpp ctl_vumeter.cpp ctl_frame.cpp ctl_fader.cpp ctl_buttons.cpp ctl_notebook.cpp ctl_meterscale.cpp ctl_combobox.cpp ctl_tuner.cpp ctl_phasegraph.cpp ctl_pattern.cpp metadata.cpp giface.cpp plugin_gui_window.cpp preset.cpp preset_gui.cpp lv2gui.cpp osctl.cpp utils.cpp ctl_linegraph.cpp drawingutils.cpp)
     target_include_directories(${PROJECT_NAME}lv2gui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    if(USE_JACK)
+        target_include_directories(${PROJECT_NAME}lv2gui PRIVATE ${JACK_INCLUDE_DIRS})
+    endif()
     check_linker_flag(CXX -Wl,-z,nodelete LINKER_SUPPORTS_NODELETE)
     if (LINKER_SUPPORTS_NODELETE)
         target_link_options(${PROJECT_NAME}lv2gui PRIVATE -Wl,-z,nodelete)
@@ -83,9 +89,13 @@ endif()
 if(USE_GUI AND USE_JACK)
     add_executable(${PROJECT_NAME}jackhost gtk_session_env.cpp host_session.cpp jack_client.cpp jackhost.cpp gtk_main_win.cpp connector.cpp session_mgr.cpp)
     
-    target_include_directories(${PROJECT_NAME}jackhost PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_include_directories(${PROJECT_NAME}jackhost PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${JACK_INCLUDE_DIRS})
     target_link_directories(${PROJECT_NAME}jackhost PRIVATE ${JACK_LIBRARY_DIRS})
     target_link_libraries(${PROJECT_NAME}jackhost PRIVATE Threads::Threads ${PROJECT_NAME}gui ${PROJECT_NAME} ${JACK_LIBRARIES} ${GTK_LIBRARIES} fluidsynth)
+    if(USE_NSM)
+        target_include_directories(${PROJECT_NAME}jackhost PRIVATE ${LO_INCLUDE_DIRS})
+        target_link_libraries(${PROJECT_NAME}jackhost PRIVATE ${LO_LIBRARIES})
+    endif()
     
     set_target_properties(${PROJECT_NAME}jackhost PROPERTIES
         INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}"

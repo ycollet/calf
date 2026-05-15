@@ -41,6 +41,9 @@ struct session_client_iface
 {
     virtual void load(session_load_iface *) = 0;
     virtual void save(session_save_iface *) = 0;
+    virtual char *open_file(const char *name) { return NULL; }
+    virtual char *save_file(const char *name) { return NULL; }
+    virtual void quit() {}
     virtual ~session_client_iface() {}
 };
     
@@ -56,6 +59,10 @@ struct session_manager_iface
 
 #if USE_LASH
 extern session_manager_iface *create_lash_session_mgr(session_client_iface *client, int &argc, char **&argv);
+#endif
+
+#if USE_NSM
+extern session_manager_iface *create_nsm_session_mgr(session_client_iface *client, const char *exe_name);
 #endif
 
 };

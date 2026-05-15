@@ -20,6 +20,7 @@
  */
 #include "config.h"
 #include <calf/session_mgr.h>
+#include <string>
 
 #if USE_LASH
 
@@ -298,5 +299,175 @@ session_manager_iface *calf_plugins::create_lash_session_mgr(session_client_ifac
 }
 
 # endif
+
+#endif
+
+#if USE_NSM
+
+#include <lo/lo.h>
+#include <glib.h>
+#include <unistd.h>
+
+using namespace std;
+using namespace calf_plugins;
+
+class nsm_session_manager : public session_manager_iface
+{
+    session_client_iface *client;
+    lo_server server;
+    lo_address nsm_addr;
+    bool being_restored;
+    bool got_open;
+    std::string session_dir;
+    std::string client_id;
+    int source_id;
+
+    static int on_reply(const char *path, const char *types, lo_arg **argv, int argc, lo_message msg, void *user_data);
+    static int on_open(const char *path, const char *types, lo_arg **argv, int argc, lo_message msg, void *user_data);
+    static int on_save(const char *path, const char *types, lo_arg **argv, int argc, lo_message msg, void *user_data);
+    static int on_quit(const char *path, const char *types, lo_arg **argv, int argc, lo_message msg, void *user_data);
+
+    static gboolean poll_server(void *data) {
+        lo_server_recv_noblock((lo_server)data, 0);
+        return TRUE;
+    }
+
+public:
+    nsm_session_manager(session_client_iface *_client, const char *nsm_url, const char *exe_name);
+    ~nsm_session_manager();
+
+    virtual bool is_being_restored() { return being_restored; }
+    virtual void set_jack_client_name(const std::string &) {}
+    virtual void connect(const std::string &name);
+    virtual void poll() { if (server) lo_server_recv_noblock(server, 0); }
+    virtual void disconnect();
+};
+
+nsm_session_manager::nsm_session_manager(session_client_iface *_client, const char *nsm_url, const char *exe_name)
+    : client(_client), server(NULL), nsm_addr(NULL), being_restored(false), got_open(false), source_id(0)
+{
+    server = lo_server_new(NULL, NULL);
+    if (!server) {
+        g_warning("NSM: failed to create OSC server");
+        return;
+    }
+    lo_server_add_method(server, "/reply",              NULL,  on_reply, this);
+    lo_server_add_method(server, "/nsm/client/open",    "sss", on_open,  this);
+    lo_server_add_method(server, "/nsm/client/save",    "",    on_save,  this);
+    lo_server_add_method(server, "/nsm/client/quit",    "",    on_quit,  this);
+
+    nsm_addr = lo_address_new_from_url(nsm_url);
+    if (!nsm_addr) {
+        g_warning("NSM: invalid URL: %s", nsm_url);
+        return;
+    }
+
+    lo_send(nsm_addr, "/nsm/server/announce", "sssiii",
+            "Calf Studio Gear",
+            ":dirty:",
+            exe_name,
+            1, 2,
+            (int)getpid());
+
+    // Block briefly waiting for /nsm/client/open (up to 5 seconds)
+    for (int i = 0; i < 500 && !got_open; i++)
+        lo_server_recv_noblock(server, 10);
+
+    if (!got_open)
+        g_warning("NSM: timed out waiting for /nsm/client/open");
+}
+
+nsm_session_manager::~nsm_session_manager()
+{
+    disconnect();
+}
+
+void nsm_session_manager::connect(const std::string &)
+{
+    if (!session_dir.empty() && being_restored) {
+        std::string rack_file = session_dir + G_DIR_SEPARATOR_S "rack.xml";
+        char *err = client->open_file(rack_file.c_str());
+        if (err) {
+            g_warning("NSM: failed to load session: %s", err);
+            free(err);
+        }
+    }
+    if (server)
+        source_id = g_timeout_add(50, poll_server, server);
+}
+
+void nsm_session_manager::disconnect()
+{
+    if (source_id) {
+        g_source_remove(source_id);
+        source_id = 0;
+    }
+    if (server) {
+        lo_server_free(server);
+        server = NULL;
+    }
+    if (nsm_addr) {
+        lo_address_free(nsm_addr);
+        nsm_addr = NULL;
+    }
+}
+
+int nsm_session_manager::on_reply(const char *path, const char *types, lo_arg **argv, int argc, lo_message msg, void *user_data)
+{
+    nsm_session_manager *self = (nsm_session_manager *)user_data;
+    if (argc < 1 || types[0] != 's') return 0;
+    if (strcmp(&argv[0]->s, "/nsm/server/announce") != 0) return 0;
+    if (argc >= 3 && types[2] == 's')
+        self->client_id = &argv[2]->s;
+    return 0;
+}
+
+int nsm_session_manager::on_open(const char *path, const char *types, lo_arg **argv, int argc, lo_message msg, void *user_data)
+{
+    nsm_session_manager *self = (nsm_session_manager *)user_data;
+    std::string new_dir = &argv[0]->s;
+    self->client_id = &argv[2]->s;
+
+    g_mkdir_with_parents(new_dir.c_str(), 0755);
+
+    std::string rack_file = new_dir + G_DIR_SEPARATOR_S "rack.xml";
+    self->being_restored = g_file_test(rack_file.c_str(), G_FILE_TEST_EXISTS) == TRUE;
+    self->session_dir = new_dir;
+    self->got_open = true;
+
+    lo_send(self->nsm_addr, "/reply", "ss", "/nsm/client/open", "opened");
+    return 0;
+}
+
+int nsm_session_manager::on_save(const char *path, const char *types, lo_arg **argv, int argc, lo_message msg, void *user_data)
+{
+    nsm_session_manager *self = (nsm_session_manager *)user_data;
+    if (!self->session_dir.empty()) {
+        std::string rack_file = self->session_dir + G_DIR_SEPARATOR_S "rack.xml";
+        char *err = self->client->save_file(rack_file.c_str());
+        if (err) {
+            lo_send(self->nsm_addr, "/error", "sis", "/nsm/client/save", 1, err);
+            free(err);
+            return 0;
+        }
+    }
+    lo_send(self->nsm_addr, "/reply", "ss", "/nsm/client/save", "saved");
+    return 0;
+}
+
+int nsm_session_manager::on_quit(const char *path, const char *types, lo_arg **argv, int argc, lo_message msg, void *user_data)
+{
+    nsm_session_manager *self = (nsm_session_manager *)user_data;
+    self->client->quit();
+    return 0;
+}
+
+session_manager_iface *calf_plugins::create_nsm_session_mgr(session_client_iface *client, const char *exe_name)
+{
+    const char *nsm_url = getenv("NSM_URL");
+    if (!nsm_url)
+        return NULL;
+    return new nsm_session_manager(client, nsm_url, exe_name);
+}
 
 #endif

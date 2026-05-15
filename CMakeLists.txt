@@ -26,6 +26,7 @@ include(GNUInstallDirs)
 option(WANT_GUI         "Include Graphical User Interface" ON)
 option(WANT_JACK        "Include JACK (Jack Audio Connection Kit) support" ON)
 option(WANT_LASH        "Include LASH (LASH Audio Session Handler) support" ON)
+option(WANT_NSM         "Include NSM (Non-Session-Manager) support via liblo" ON)
 option(WANT_DEBUG       "Create debug build" OFF)
 option(WANT_SSE         "Compile with SSE extensions" OFF)
 option(WANT_LV2         "Build Lv2 wrapper" ON)
@@ -101,6 +102,20 @@ if(WANT_JACK)
     endif()
 else()
     set(STATUS_JACK "not built as requested")
+endif()
+
+if(WANT_NSM AND USE_JACK AND USE_GUI)
+    if(PKG_CONFIG_FOUND)
+        pkg_check_modules(LO liblo)
+    endif()
+    if(LO_FOUND)
+        set(USE_NSM TRUE)
+        set(STATUS_NSM "OK")
+    else()
+        set(STATUS_NSM "not found - liblo required")
+    endif()
+else()
+    set(STATUS_NSM "not built as requested")
 endif()
 
 if(WANT_LASH)
@@ -277,6 +292,7 @@ message(
     "* Install Prefix          : ${CMAKE_INSTALL_PREFIX}\n"
     "* Jack                    : ${STATUS_JACK}\n"
     "* LASH                    : ${STATUS_LASH}\n"
+    "* NSM                     : ${STATUS_NSM}\n"
     "* GUI                     : ${STATUS_GUI}\n"
     "* LV2                     : ${STATUS_LV2}\n"
     "* LV2 GUI                 : ${STATUS_LV2_GUI}\n"

@@ -36,9 +36,6 @@ class host_session: public main_window_owner_iface, public session_client_iface
 private:
     static host_session *instance;
 
-    static void session_callback(jack_session_event_t *event, void *arg);
-    void handle_jack_session_event(jack_session_event_t *event);
-
 public:
     /// Requested JACK client name.
     std::string client_name;
@@ -62,12 +59,8 @@ public:
     volatile bool save_file_on_next_idle_call;
     /// If non-zero, quit has been requested through signal with same value
     volatile int quit_on_next_idle_call;
-    /// JACK session event to handle on the next idle call
-    jack_session_event_t *volatile handle_event_on_next_idle_call;
     /// File name of the current rack
     std::string current_filename;
-    /// Jack session ID, if given via command line, otherwise empty
-    std::string jack_session_id;
     /// Command used to start the JACK host
     std::string calfjackhost_cmd;
     
@@ -115,11 +108,12 @@ public:
     /// Save to session manager
     virtual void save(session_save_iface *);
     
-    virtual void new_plugin(const char *name);    
+    virtual void new_plugin(const char *name);
     virtual void remove_plugin(plugin_ctl_iface *plugin);
     virtual void rename_plugin(plugin_ctl_iface *plugin, const char *name);
     virtual void on_main_window_destroy();
     virtual void on_idle();
+    virtual void quit();
     virtual void reorder_plugins();
     virtual std::string get_current_filename() const;
     virtual void set_current_filename(const std::string &name);

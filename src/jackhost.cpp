@@ -23,6 +23,7 @@
 #include <calf/preset.h>
 #include <calf/gtk_session_env.h>
 #include <calf/plugin_tools.h>
+#include <calf/session_mgr.h>
 #ifdef _MSC_VER
     #include "getopt_windows.h"
 #else
@@ -421,7 +422,7 @@ char *jack_host::configure(const char *key, const char *value)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static const char *short_options = "c:i:l:o:m:M:s:S:ehvLnt";
+static const char *short_options = "c:i:l:o:m:M:s:ehvLnt";
 
 static struct option long_options[] = {
     {"help", 0, 0, 'h'},
@@ -434,7 +435,6 @@ static struct option long_options[] = {
     {"midi", 1, 0, 'm'},
     {"state", 1, 0, 's'},
     {"connect-midi", 1, 0, 'M'},
-    {"session-id", 1, 0, 'S'},
     {"list", 0, 0, 'L'},
     {"no-gui", 0, 0, 'n'},
     {"no-tray", 0, 0, 't'},
@@ -489,6 +489,10 @@ int main(int argc, char *argv[])
 #else
     sess.session_manager = NULL;
 #endif
+#if USE_NSM
+    if (!sess.session_manager)
+        sess.session_manager = create_nsm_session_mgr(&sess, sess.calfjackhost_cmd.c_str());
+#endif
     while(1)
     {
         int option_index;
@@ -513,9 +517,6 @@ int main(int argc, char *argv[])
                 break;
             case 'm':
                 sess.midi_name = string(optarg) + "_%d";
-                break;
-            case 'S':
-                sess.jack_session_id = optarg;
                 break;
             case 'n':
                 sess.has_gui = false;

@@ -114,8 +114,10 @@ namespace calf_plugins {
         static gboolean on_idle(void *data);
         void fill_plugin_menu(GMenu *menu);
         static void add_plugin_action(GSimpleAction *action, GVariant *param, gpointer data);
-        void display_error(const char *error, const char *filename);
         void on_config_change();
+
+    public:
+        void display_error(const char *error, const char *filename);
         GtkWidget *create_vu_meter();
         GtkWidget *create_meter_scale();
         /// Create a toplevel window with progress bar
