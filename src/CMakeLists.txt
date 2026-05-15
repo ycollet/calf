@@ -36,6 +36,7 @@ endif()
 
 if(USE_JACK)
     target_include_directories(${PROJECT_NAME} PRIVATE ${JACK_INCLUDE_DIRS})
+    target_link_directories(${PROJECT_NAME} PRIVATE ${JACK_LIBRARY_DIRS})
     target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads ${JACK_LIBRARIES})
 endif()
 
@@ -83,6 +84,7 @@ if(USE_GUI AND USE_JACK)
     add_executable(${PROJECT_NAME}jackhost gtk_session_env.cpp host_session.cpp jack_client.cpp jackhost.cpp gtk_main_win.cpp connector.cpp session_mgr.cpp)
     
     target_include_directories(${PROJECT_NAME}jackhost PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_directories(${PROJECT_NAME}jackhost PRIVATE ${JACK_LIBRARY_DIRS})
     target_link_libraries(${PROJECT_NAME}jackhost PRIVATE Threads::Threads ${PROJECT_NAME}gui ${PROJECT_NAME} ${JACK_LIBRARIES} ${GTK_LIBRARIES} fluidsynth)
     
     set_target_properties(${PROJECT_NAME}jackhost PROPERTIES
