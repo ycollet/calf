@@ -48,11 +48,13 @@ calf_connector::~calf_connector()
 // CALLBACKS FOR CALLBACKS
 void calf_connector::toggle_port(calf_connector *self, GtkListStore *list, gchar *path_, gchar **port, gboolean &enabled)
 {
+G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     GtkTreeIter iter;
     gtk_tree_model_get_iter(GTK_TREE_MODEL(list), &iter, gtk_tree_path_new_from_string(path_));
     gtk_tree_model_get(GTK_TREE_MODEL(list), &iter, 0, port, 2, &enabled, -1);
     gtk_list_store_set(GTK_LIST_STORE (list), &iter, 2, !enabled, -1);
     enabled = !enabled;
+G_GNUC_END_IGNORE_DEPRECATIONS
 }
 void calf_connector::connect(jack_client_t *client, gchar *source, gchar *dest, gboolean enabled)
 {
