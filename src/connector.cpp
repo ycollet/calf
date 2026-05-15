@@ -69,6 +69,8 @@ void calf_connector::connect(jack_client_t *client, gchar *source, gchar *dest, 
 // PORT CLICKS
 void calf_connector::inport_clicked(GtkWidget *button, gpointer data)
 {
+    if (!gtk_check_button_get_active(GTK_CHECK_BUTTON(button)))
+        return;
     connector_port *port = (connector_port *)data;
     if (port == port->connector->active_in)
         return;
@@ -77,6 +79,8 @@ void calf_connector::inport_clicked(GtkWidget *button, gpointer data)
 }
 void calf_connector::outport_clicked(GtkWidget *button, gpointer data)
 {
+    if (!gtk_check_button_get_active(GTK_CHECK_BUTTON(button)))
+        return;
     connector_port *port = (connector_port *)data;
     if (port == port->connector->active_out)
         return;
@@ -85,6 +89,8 @@ void calf_connector::outport_clicked(GtkWidget *button, gpointer data)
 }
 void calf_connector::midiport_clicked(GtkWidget *button, gpointer data)
 {
+    if (!gtk_check_button_get_active(GTK_CHECK_BUTTON(button)))
+        return;
     connector_port *port = (connector_port *)data;
     if (port == port->connector->active_midi)
         return;
@@ -181,6 +187,7 @@ void calf_connector::fill_midilist(gpointer data)
 
 void calf_connector::fill_list(calf_connector *self, int type)
 {
+G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     GtkTreeIter iter;
     GtkListStore *list;
     const char **ports;
@@ -214,10 +221,12 @@ void calf_connector::fill_list(calf_connector *self, int type)
     } while (ports[++c]);
     jack_free(ports);
     self->set_toggles(self, type);
+G_GNUC_END_IGNORE_DEPRECATIONS
 }
 
 void calf_connector::set_toggles(calf_connector *self, int type)
 {
+G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     const char** cons;
     const char** ports;
     char path[16];
@@ -283,6 +292,7 @@ void calf_connector::set_toggles(calf_connector *self, int type)
     } while (ports[++p]);
     jack_free(cons);
     jack_free(ports);
+G_GNUC_END_IGNORE_DEPRECATIONS
 }
 
 void calf_connector::_disconnect(int type)
@@ -372,7 +382,6 @@ void calf_connector::create_window()
     gtk_window_set_destroy_with_parent(GTK_WINDOW(window), TRUE);
     //gtk_window_set_keep_above(GTK_WINDOW(window), TRUE);
     gtk_window_set_icon_name(GTK_WINDOW(window), "calf_plugin");
-    gtk_window_set_role(GTK_WINDOW(window), "calf_connector");
     gtk_window_set_default_size(GTK_WINDOW(window), 900, 400);
 gtk_widget_set_name(GTK_WIDGET(window), "Connector");
     
@@ -421,7 +430,7 @@ gtk_widget_set_name(GTK_WIDGET(window), "Connector");
     GtkWidget *inbut = gtk_button_new_with_label("Inputs");
     g_signal_connect(G_OBJECT(inbut), "clicked", G_CALLBACK(disconnect_inputs), this);
     gtk_box_append(GTK_BOX(buttons), inbut);
-    gtk_widget_show(GTK_WIDGET(inbut));
+    gtk_widget_set_visible(GTK_WIDGET(inbut), TRUE);
     
     // Output frame
     GtkWidget *outframe = gtk_frame_new("Plug-In Outputs");
@@ -437,7 +446,7 @@ gtk_widget_set_name(GTK_WIDGET(window), "Connector");
     GtkWidget *outbut = gtk_button_new_with_label("Outputs");
     g_signal_connect(G_OBJECT(outbut), "clicked", G_CALLBACK(disconnect_outputs), this);
     gtk_box_append(GTK_BOX(buttons), outbut);
-    gtk_widget_show(GTK_WIDGET(outbut));
+    gtk_widget_set_visible(GTK_WIDGET(outbut), TRUE);
     
     // MIDI frame
     GtkWidget *midiframe = gtk_frame_new("Plug-In MIDI");
@@ -449,7 +458,7 @@ gtk_widget_set_name(GTK_WIDGET(window), "Connector");
     GtkWidget *midibut = gtk_button_new_with_label("MIDI");
     g_signal_connect(G_OBJECT(midibut), "clicked", G_CALLBACK(disconnect_midi), this);
     gtk_box_append(GTK_BOX(buttons), midibut);
-    gtk_widget_show(GTK_WIDGET(midibut));
+    gtk_widget_set_visible(GTK_WIDGET(midibut), TRUE);
     
     // LABEL
     GtkWidget *label = gtk_label_new(strip->plugin->get_metadata_iface()->get_label());
@@ -457,15 +466,14 @@ gtk_widget_set_name(GTK_WIDGET(window), "Connector");
     gtk_widget_set_margin_start(GTK_WIDGET(label), 10);
     gtk_widget_set_margin_end(GTK_WIDGET(label), 10);
     gtk_widget_set_name(GTK_WIDGET(label), "Title");
-    gtk_label_set_angle(GTK_LABEL(label), 90);
-    
-    gtk_widget_show(window);
+
+    gtk_widget_set_visible(window, TRUE);
     
     // Disconnect all button
     GtkWidget *allbut = gtk_button_new_with_label("*All*");
     g_signal_connect(G_OBJECT(allbut), "clicked", G_CALLBACK(disconnect_all), this);
     gtk_box_append(GTK_BOX(buttons), allbut);
-    gtk_widget_show(GTK_WIDGET(allbut));
+    gtk_widget_set_visible(GTK_WIDGET(allbut), TRUE);
     
     // Close button
     //GtkWidget *_close = gtk_alignment_new(1, 1, 0.5, 0.33);
@@ -473,13 +481,14 @@ gtk_widget_set_name(GTK_WIDGET(window), "Connector");
     GtkWidget *close = gtk_button_new_with_label("Close");
     g_signal_connect(G_OBJECT(close), "clicked", G_CALLBACK(close_window), this);
     //gtk_container_add(GTK_CONTAINER(_close), close);
-    gtk_widget_show(GTK_WIDGET(close));
+    gtk_widget_set_visible(GTK_WIDGET(close), TRUE);
     //gtk_widget_show(GTK_WIDGET(_close));
     gtk_box_append(GTK_BOX(vbox), GTK_WIDGET(close));
     
     
     // LIST STUFF
-    
+
+G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     GtkTreeViewColumn *col;
     GtkCellRenderer *renderer;
     GtkWidget *inscroller, *outscroller, *midiscroller;
@@ -494,13 +503,13 @@ gtk_widget_set_name(GTK_WIDGET(window), "Connector");
     gtk_widget_set_vexpand(GTK_WIDGET(inscroller), TRUE);
     gtk_widget_set_size_request(GTK_WIDGET(inscroller), 300, -1);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(inscroller), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-    gtk_widget_show(GTK_WIDGET(inscroller));
+    gtk_widget_set_visible(GTK_WIDGET(inscroller), TRUE);
 
     // list store / tree view
     inlist = gtk_list_store_new(3, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN);
     inview = gtk_tree_view_new_with_model(GTK_TREE_MODEL(inlist));
     gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(inscroller), inview);
-    gtk_widget_show(GTK_WIDGET(inview));
+    gtk_widget_set_visible(GTK_WIDGET(inview), TRUE);
     
     // text column
     col = gtk_tree_view_column_new();
@@ -536,13 +545,13 @@ gtk_widget_set_name(GTK_WIDGET(window), "Connector");
     gtk_widget_set_vexpand(GTK_WIDGET(outscroller), TRUE);
     gtk_widget_set_size_request(GTK_WIDGET(outscroller), 280, -1);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(outscroller), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-    gtk_widget_show(GTK_WIDGET(outscroller));
+    gtk_widget_set_visible(GTK_WIDGET(outscroller), TRUE);
 
     // list store / tree view
     outlist = gtk_list_store_new(3, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN);
     outview = gtk_tree_view_new_with_model(GTK_TREE_MODEL(outlist));
     gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(outscroller), outview);
-    gtk_widget_show(GTK_WIDGET(outview));
+    gtk_widget_set_visible(GTK_WIDGET(outview), TRUE);
     
     // toggle column
     col = gtk_tree_view_column_new();
@@ -574,13 +583,13 @@ gtk_widget_set_name(GTK_WIDGET(window), "Connector");
     gtk_widget_set_hexpand(GTK_WIDGET(midiscroller), TRUE);
     gtk_widget_set_size_request(GTK_WIDGET(midiscroller), 280, -1);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(midiscroller), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-    gtk_widget_show(GTK_WIDGET(midiscroller));
+    gtk_widget_set_visible(GTK_WIDGET(midiscroller), TRUE);
 
     // list store / tree view
     midilist = gtk_list_store_new(3, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN);
     midiview = gtk_tree_view_new_with_model(GTK_TREE_MODEL(midilist));
     gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(midiscroller), midiview);
-    gtk_widget_show(GTK_WIDGET(midiview));
+    gtk_widget_set_visible(GTK_WIDGET(midiview), TRUE);
     
     // text column
     col = gtk_tree_view_column_new();
@@ -605,31 +614,29 @@ gtk_widget_set_name(GTK_WIDGET(window), "Connector");
                                 GTK_SELECTION_NONE);
                               
     g_object_unref(midilist);
-    
+G_GNUC_END_IGNORE_DEPRECATIONS
+
     // ALL THOSE PORT BUTTONS
-    
+
     active_in = active_out = active_midi = NULL;
-    GtkRadioButton *last  = NULL;
-    GtkRadioButton *first = NULL;
+    GtkWidget *first_btn = NULL;
     int c = 0;
     // Inputs
     for (int i = 0; i < strip->plugin->in_count; i++) {
         sprintf(buf, "Input #%d", (i + 1));
-        GtkWidget *in = gtk_radio_button_new_with_label(NULL, buf);
+        GtkWidget *in = gtk_check_button_new_with_label(buf);
         gtk_box_append(GTK_BOX(inputs), in);
-        gtk_widget_show(GTK_WIDGET(in));
-        if (!i)
-            last = GTK_RADIO_BUTTON(in);
-        else
-            gtk_radio_button_set_group(GTK_RADIO_BUTTON(in), gtk_radio_button_get_group(last));
+        gtk_widget_set_visible(GTK_WIDGET(in), TRUE);
+        if (first_btn)
+            gtk_check_button_set_group(GTK_CHECK_BUTTON(in), GTK_CHECK_BUTTON(first_btn));
         inports[c].type = 0;
         inports[c].id = c;
         inports[c].connector = this;
-        g_signal_connect(G_OBJECT(in), "clicked", G_CALLBACK(inport_clicked), (gpointer*)&inports[c]);
-        if (!first) {
-            first = GTK_RADIO_BUTTON(in);
+        g_signal_connect(G_OBJECT(in), "toggled", G_CALLBACK(inport_clicked), (gpointer*)&inports[c]);
+        if (!first_btn) {
+            first_btn = in;
             active_in = &inports[c];
-            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(first), TRUE);
+            gtk_check_button_set_active(GTK_CHECK_BUTTON(in), TRUE);
         }
         c++;
     }
@@ -637,29 +644,26 @@ gtk_widget_set_name(GTK_WIDGET(window), "Connector");
         gtk_widget_set_sensitive(GTK_WIDGET(inframe), FALSE);
         gtk_widget_set_sensitive(GTK_WIDGET(inview), FALSE);
         gtk_widget_set_sensitive(GTK_WIDGET(inbut), FALSE);
-        gtk_widget_hide(GTK_WIDGET(inbut));
+        gtk_widget_set_visible(GTK_WIDGET(inbut), FALSE);
     }
-    first = NULL;
-    last  = NULL;
+    first_btn = NULL;
     c = 0;
     // Outputs
     for (int i = 0; i < strip->plugin->out_count; i++) {
         sprintf(buf, "Output #%d", (i + 1));
-        GtkWidget *out = gtk_radio_button_new_with_label(NULL, buf);
+        GtkWidget *out = gtk_check_button_new_with_label(buf);
         gtk_box_append(GTK_BOX(outputs), out);
-        gtk_widget_show(GTK_WIDGET(out));
-        if (!i and !last)
-            last = GTK_RADIO_BUTTON(out);
-        else
-            gtk_radio_button_set_group(GTK_RADIO_BUTTON(out), gtk_radio_button_get_group(last));
+        gtk_widget_set_visible(GTK_WIDGET(out), TRUE);
+        if (first_btn)
+            gtk_check_button_set_group(GTK_CHECK_BUTTON(out), GTK_CHECK_BUTTON(first_btn));
         outports[c].type = 1;
         outports[c].id = c;
         outports[c].connector = this;
-        g_signal_connect(G_OBJECT(out), "clicked", G_CALLBACK(outport_clicked), (gpointer*)&outports[c]);
-        if (!first) {
-            first = GTK_RADIO_BUTTON(out);
+        g_signal_connect(G_OBJECT(out), "toggled", G_CALLBACK(outport_clicked), (gpointer*)&outports[c]);
+        if (!first_btn) {
+            first_btn = out;
             active_out = &outports[c];
-            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(first), TRUE);
+            gtk_check_button_set_active(GTK_CHECK_BUTTON(out), TRUE);
         }
         c++;
     }
@@ -667,33 +671,29 @@ gtk_widget_set_name(GTK_WIDGET(window), "Connector");
         gtk_widget_set_sensitive(GTK_WIDGET(outframe), FALSE);
         gtk_widget_set_sensitive(GTK_WIDGET(outview), FALSE);
         gtk_widget_set_sensitive(GTK_WIDGET(outbut), FALSE);
-        gtk_widget_hide(GTK_WIDGET(outbut));
+        gtk_widget_set_visible(GTK_WIDGET(outbut), FALSE);
     }
-    first = NULL;
-    last  = NULL;
+    first_btn = NULL;
     c = 0;
     // MIDI
     if (strip->plugin->get_metadata_iface()->get_midi()) {
-        GtkWidget *mid = gtk_radio_button_new_with_label(NULL, "MIDI");
+        GtkWidget *mid = gtk_check_button_new_with_label("MIDI");
         gtk_box_append(GTK_BOX(midi), mid);
         midiports[c].type = 2;
         midiports[c].id = c;
         midiports[c].connector = this;
-        g_signal_connect(G_OBJECT(mid), "clicked", G_CALLBACK(midiport_clicked), (gpointer*)&midiports[c]);
-        gtk_widget_show(GTK_WIDGET(mid));
-        if (!first) {
-            first = GTK_RADIO_BUTTON(mid);
+        g_signal_connect(G_OBJECT(mid), "toggled", G_CALLBACK(midiport_clicked), (gpointer*)&midiports[c]);
+        gtk_widget_set_visible(GTK_WIDGET(mid), TRUE);
+        if (!first_btn) {
+            first_btn = mid;
             active_midi = &midiports[c];
-            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(first), TRUE);
+            gtk_check_button_set_active(GTK_CHECK_BUTTON(mid), TRUE);
         }
         c++;
     }
     if (!c) {
-        //gtk_widget_set_sensitive(GTK_WIDGET(midiframe), FALSE);
-        //gtk_widget_set_sensitive(GTK_WIDGET(midiview), FALSE);
-        //gtk_widget_set_sensitive(GTK_WIDGET(midibut), FALSE);
-        gtk_widget_hide(GTK_WIDGET(midiview));
-        gtk_widget_hide(GTK_WIDGET(midibut));
+        gtk_widget_set_visible(GTK_WIDGET(midiview), FALSE);
+        gtk_widget_set_visible(GTK_WIDGET(midibut), FALSE);
         // Span inscroller across both rows when there is no MIDI port
         gtk_grid_remove(GTK_GRID(table), GTK_WIDGET(inscroller));
         gtk_grid_attach(GTK_GRID(table), GTK_WIDGET(inscroller), 0, 0, 1, 2);
