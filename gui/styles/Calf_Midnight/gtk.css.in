@@ -28,7 +28,24 @@
   color: #d1ea73;
 }
 
+/* Rack widget labels (small font, white text) */
+.Calf-Rack-Widgets {
+  color: #ffffff;
+  font-size: 5pt;
+}
+
+.Calf-Rack-Label {
+  color: #ffffff;
+  font-size: 5pt;
+}
+
 .Calf-Label {
+  color: #ffffff;
+  font-size: 7pt;
+}
+
+/* Calf-Value uses same style as Calf-Label */
+.Calf-Value {
   color: #ffffff;
   font-size: 7pt;
 }
@@ -55,6 +72,14 @@
   background-repeat: no-repeat;
 }
 
+/* Connector */
+.Connector-Children {
+  font-size: 8pt;
+}
+.Connector-Title {
+  font-size: 13pt;
+}
+
 .Calf-Menu {
   color: #dddddd;
   background-color: #111111;
@@ -68,6 +93,16 @@
 entry.Calf-Rack-Entry {
   background-color: #000000;
   color: #d1ea73;
+}
+
+/* Text entry */
+entry.Calf-Entry {
+  background-color: #000000;
+  color: #d1ea73;
+}
+entry.Calf-Entry:selected {
+  background-color: #d1ea73;
+  color: #000000;
 }
 
 .calf-button {
@@ -90,8 +125,86 @@ entry.Calf-Rack-Entry {
   color: #000000;
 }
 
+/* Scale / fader */
+scale.Calf-Scale {
+  color: #ffffff;
+}
+scale.Calf-Scale trough {
+  background-color: #333333;
+}
+scale.Calf-Scale slider {
+  background-color: #555555;
+}
+
+/* Notebook */
 .notebook {
   color: #ffffff;
+}
+notebook > header > tabs > tab {
+  color: #ffffff;
+  background-color: #1ab5fa;
+}
+notebook > header > tabs > tab:checked {
+  color: #eeeeee;
+}
+
+/* Treeview */
+treeview.Calf-TreeView {
+  background-color: #222932;
+  color: #dddddd;
+}
+treeview.Calf-TreeView > row:selected,
+treeview.Calf-TreeView > row:active {
+  background-color: #49596a;
+  color: #ffffff;
+}
+treeview.Calf-TreeView > row:nth-child(odd) {
+  background-color: #323942;
+}
+treeview.Calf-TreeView button {
+  background-color: #eeeeee;
+  color: #ffffff;
+}
+
+/* Frame */
+frame.Calf-Frame > border {
+  border-color: #333333;
+}
+.Calf-Frame {
+  color: #333333;
+}
+
+/* VUMeter */
+.CalfVUMeter {
+  background-color: #2b2b2b;
+  color: #ffffff;
+}
+
+/* MeterScale */
+.CalfMeterScale {
+  color: #ffffff;
+}
+.Calf-Rack .CalfMeterScale {
+  color: #ffffff;
+}
+
+/* LED */
+.CalfLed {
+  background-color: #2b2b2b;
+}
+
+/* Displays (LineGraph, PhaseGraph, Tuner, Pattern) */
+.CalfLineGraph,
+.CalfPhaseGraph,
+.Calf-Display {
+  background-color: #2b2b2b;
+  color: #595a33;
+}
+
+/* Knobs — colors used by custom drawing code */
+/* fg[NORMAL]=#000f17 (ring unlit), fg[PRELIGHT]=#1ab5fa (ring lit), fg[ACTIVE]=#ffffff (tick) */
+.CalfKnob {
+  color: #000f17;
 }
 
 /* GTK4 popup menus */
