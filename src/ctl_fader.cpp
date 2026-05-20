@@ -198,9 +198,29 @@ calf_fader_leave (GtkEventControllerMotion *controller, gpointer user_data)
 }
 
 static void
-calf_fader_allocate (GtkWidget *widget, GtkAllocation *allocation)
+calf_fader_size_allocate (GtkWidget *widget, int width, int height, int baseline)
 {
+    GtkWidgetClass *parent_class = (GtkWidgetClass *)g_type_class_peek(GTK_TYPE_SCALE);
+    if (parent_class->size_allocate)
+        parent_class->size_allocate(widget, width, height, baseline);
     calf_fader_set_layout(widget);
+}
+
+static void
+calf_fader_measure (GtkWidget *widget, GtkOrientation orientation, int for_size,
+                    int *minimum, int *natural, int *minimum_baseline, int *natural_baseline)
+{
+    CalfFader *fader = CALF_FADER(widget);
+    int sz = 40;
+    if (fader->image) {
+        sz = (orientation == GTK_ORIENTATION_HORIZONTAL)
+             ? gdk_pixbuf_get_height(fader->image)
+             : gdk_pixbuf_get_width(fader->image);
+    }
+    *minimum = sz;
+    *natural = sz;
+    if (minimum_baseline) *minimum_baseline = -1;
+    if (natural_baseline)  *natural_baseline  = -1;
 }
 
 static void
@@ -308,6 +328,8 @@ calf_fader_class_init (CalfFaderClass *klass)
 {
     GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
     widget_class->snapshot       = calf_fader_snapshot;
+    widget_class->size_allocate  = calf_fader_size_allocate;
+    widget_class->measure        = calf_fader_measure;
 }
 
 static void
@@ -322,7 +344,7 @@ calf_fader_init (CalfFader *self)
     g_signal_connect(motion, "leave",  G_CALLBACK(calf_fader_leave),  GTK_WIDGET(self));
     gtk_widget_add_controller(GTK_WIDGET(self), GTK_EVENT_CONTROLLER(motion));
 
-    g_signal_connect(GTK_WIDGET(self), "size-allocate", G_CALLBACK(calf_fader_allocate), NULL);
+    /* size_allocate and measure are handled via virtual function overrides */
 }
 
 GType

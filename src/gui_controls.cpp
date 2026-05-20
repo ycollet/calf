@@ -1781,7 +1781,7 @@ GtkWidget *listview_param_control::create(plugin_gui *_gui, int _param_no)
     widget = gtk_tree_view_new_with_model(GTK_TREE_MODEL(lstore));
     delete []p;
     tree = GTK_TREE_VIEW (widget);
-    g_object_set (G_OBJECT (tree), "enable-search", FALSE, "rules-hint", TRUE, "enable-grid-lines", TRUE, NULL);
+    g_object_set (G_OBJECT (tree), "enable-search", FALSE, "enable-grid-lines", TRUE, NULL);
 
     for (int i = 0; i < cols; i++)
     {
