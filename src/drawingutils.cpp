@@ -164,22 +164,21 @@ void get_text_color(GtkWidget *widget, GtkStateFlags *state, float *r, float *g,
 }
 
 /* Fetch theme colors for Calf custom widgets (GTK4.20+, no GtkStyleContext).
- * "fg" uses gtk_widget_get_color (foreground/text color from CSS).
- * bg/base/text fall back to dark-theme defaults matching the Calf CSS theme.
+ * "fg" and "text" use gtk_widget_get_color (CSS `color` property).
+ * "bg" falls back to light gray  matching GTK2 calf-button/vumeter/led defaults.
+ * "base" falls back to lime yellow matching GTK2 calf-display/combobox defaults.
  * The 'state' parameter is kept for ABI compatibility but is no longer used. */
 void get_color(GtkWidget *widget, const gchar *type, GtkStateFlags * /*state*/, float *r, float *g, float *b) {
-    if (!strcmp(type, "fg")) {
+    if (!strcmp(type, "fg") || !strcmp(type, "text")) {
         GdkRGBA color;
         gtk_widget_get_color(widget, &color);
         *r = color.red; *g = color.green; *b = color.blue;
         return;
     }
     if (!strcmp(type, "bg")) {
-        *r = 0.18f; *g = 0.18f; *b = 0.18f;
-    } else if (!strcmp(type, "base")) {
-        *r = 0.10f; *g = 0.10f; *b = 0.10f;
-    } else if (!strcmp(type, "text")) {
         *r = 0.85f; *g = 0.85f; *b = 0.85f;
+    } else if (!strcmp(type, "base")) {
+        *r = 0.89f; *g = 1.00f; *b = 0.45f;
     } else {
         *r = 0.5f; *g = 0.5f; *b = 0.5f;
     }

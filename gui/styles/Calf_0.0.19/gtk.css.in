@@ -231,3 +231,27 @@ scrolledwindow.Calf-Container > viewport {
   background-color: transparent;
   background-image: none;
 }
+
+/* Rack title: match GTK2 entry appearance */
+label.Calf-Rack-Title {
+  background-color: #000000;
+  color: #d1ea73;
+  padding: 3px 7px;
+}
+
+/* GtkDropDown button display area */
+dropdown.calf-combobox > button {
+  background-image: none;
+  background-color: #e3ff73;
+  color: #000000;
+  border-radius: 0px;
+  box-shadow: none;
+  padding: 2px 6px;
+  min-height: 0;
+}
+dropdown.calf-combobox > button > box > label {
+  color: #000000;
+}
+dropdown.calf-combobox > button:hover {
+  background-color: #f0ff8a;
+}
