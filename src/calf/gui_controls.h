@@ -72,6 +72,7 @@ struct alignment_container: public control_base
 struct frame_container: public control_base
 {
     virtual GtkWidget *create(plugin_gui *_gui);
+    virtual void add(control_base *base);
 };
 
 struct box_container: public control_base

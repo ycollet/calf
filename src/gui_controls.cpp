@@ -2048,6 +2048,11 @@ GtkWidget *frame_container::create(plugin_gui *_gui)
     return widget;
 }
 
+void frame_container::add(control_base *base)
+{
+    gtk_frame_set_child(GTK_FRAME(widget), base->widget);
+}
+
 /******************************** GtkBox type of containers ********************************/
 
 void box_container::add(control_base *base)
