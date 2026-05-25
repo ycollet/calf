@@ -179,10 +179,10 @@ frame.Calf-Frame > border {
 }
 
 /* MeterScale */
-.CalfMeterScale {
+.Calf-MeterScale {
   color: #000000;
 }
-.Calf-Rack .CalfMeterScale {
+.Calf-Rack .Calf-MeterScale {
   color: #000000;
 }
 
@@ -253,4 +253,11 @@ dropdown.calf-combobox > button > box > label {
 }
 dropdown.calf-combobox > button:hover {
   background-color: #ff88d8;
+}
+
+/* Rack context: Calf-Label/Value match Calf-Rack-Label on the silver rack background */
+.Calf-Rack .Calf-Label,
+.Calf-Rack .Calf-Value {
+  color: #000000;
+  font-size: 5pt;
 }

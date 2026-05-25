@@ -519,6 +519,7 @@ plugin_strip *gtk_main_window::create_strip(jack_host *plugin)
         GtkWidget *led = calf_led_new();
         GtkWidget *midiBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
         GtkWidget *midiLabel = gtk_label_new("MIDI");
+        gtk_widget_add_css_class(midiLabel, "Calf-Rack-Label");
         GtkWidget *midiSpacer = gtk_label_new("");
         gtk_box_append(GTK_BOX(midiBox), midiLabel);
         gtk_box_append(GTK_BOX(midiBox), GTK_WIDGET(led));
@@ -559,7 +560,9 @@ plugin_strip *gtk_main_window::create_strip(jack_host *plugin)
 
         GtkWidget *inBox  = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
 
-        gtk_box_append(GTK_BOX(inBox), gtk_label_new("Audio In"));
+        { GtkWidget *inLabel = gtk_label_new("Audio In");
+          gtk_widget_add_css_class(inLabel, "Calf-Rack-Label");
+          gtk_box_append(GTK_BOX(inBox), inLabel); }
 
         for (int i = 0; i < metadata->get_input_count(); i++)
         {
@@ -610,6 +613,7 @@ plugin_strip *gtk_main_window::create_strip(jack_host *plugin)
         GtkWidget *outBox  = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
 
         GtkWidget *outLabel = gtk_label_new("Audio Out");
+        gtk_widget_add_css_class(outLabel, "Calf-Rack-Label");
         gtk_box_append(GTK_BOX(outBox), outLabel);
         gtk_widget_set_hexpand(outLabel, TRUE);
         gtk_widget_set_vexpand(outLabel, TRUE);

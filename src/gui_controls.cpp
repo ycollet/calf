@@ -1241,6 +1241,7 @@ GtkWidget *meter_scale_param_control::create(plugin_gui *_gui, int _param_no)
     widget  = calf_meter_scale_new ();
     CalfMeterScale *ms = CALF_METER_SCALE(widget);
     gtk_widget_set_name(widget, "Calf-MeterScale");
+    gtk_widget_add_css_class(widget, "Calf-MeterScale");
     string str   = "0 0.5 1";
     ms->marker   = get_vector("marker", str);
     ms->mode     = (CalfVUMeterMode)get_int("mode", 0);
