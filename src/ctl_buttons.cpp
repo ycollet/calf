@@ -391,7 +391,7 @@ calf_toggle_button_class_init (CalfToggleButtonClass *klass)
 static void
 calf_toggle_button_init (CalfToggleButton *self)
 {
-    gtk_widget_set_size_request(GTK_WIDGET(self), 40, 20);
+    gtk_widget_set_size_request(GTK_WIDGET(self), 60, 24);
 }
 
 GType

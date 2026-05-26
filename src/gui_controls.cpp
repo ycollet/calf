@@ -2058,10 +2058,20 @@ void frame_container::add(control_base *base)
 
 void box_container::add(control_base *base)
 {
-    bool expand = get_int("expand", 1) != 0;
-    if (expand) {
-        gtk_widget_set_hexpand(base->widget, TRUE);
-        gtk_widget_set_vexpand(base->widget, TRUE);
+    // Child's explicit expand/fill takes precedence; fall back to container's default.
+    // Matches GTK2 semantics: expand/fill on leaf elements override container default.
+    bool expand = (base->attribs.count("expand") ? base : this)->get_int("expand", 1) != 0;
+    bool fill   = (base->attribs.count("fill")   ? base : this)->get_int("fill",   1) != 0;
+
+    GtkOrientation orientation = gtk_orientable_get_orientation(GTK_ORIENTABLE(widget));
+    if (orientation == GTK_ORIENTATION_VERTICAL) {
+        gtk_widget_set_vexpand(base->widget, expand);
+        if (expand && !fill)
+            gtk_widget_set_valign(base->widget, GTK_ALIGN_CENTER);
+    } else {
+        gtk_widget_set_hexpand(base->widget, expand);
+        if (expand && !fill)
+            gtk_widget_set_halign(base->widget, GTK_ALIGN_CENTER);
     }
     gtk_box_append(GTK_BOX(widget), base->widget);
 }
