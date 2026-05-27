@@ -327,6 +327,7 @@ static void
 calf_fader_class_init (CalfFaderClass *klass)
 {
     GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
+    gtk_widget_class_set_css_name(widget_class, "calffader");
     widget_class->snapshot       = calf_fader_snapshot;
     widget_class->size_allocate  = calf_fader_size_allocate;
     widget_class->measure        = calf_fader_measure;

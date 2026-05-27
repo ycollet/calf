@@ -263,3 +263,9 @@ dropdown.calf-combobox > button:hover {
   color: #000000;
   font-size: 5pt;
 }
+
+/* CalfFader: give GTK4 slider gizmo a valid minimum size to suppress -2 warnings */
+calffader slider {
+  min-width: 1px;
+  min-height: 1px;
+}
