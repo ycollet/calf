@@ -52,11 +52,11 @@
 
 .CalfMainLeft {
   background-image: url("@guidatadir@/side_d_w.png");
-  background-repeat: no-repeat;
+  background-repeat: repeat-y;
 }
 .CalfMainRight {
   background-image: url("@guidatadir@/side_d_e.png");
-  background-repeat: no-repeat;
+  background-repeat: repeat-y;
 }
 
 .Calf-Plugin {
@@ -267,4 +267,19 @@ dropdown.calf-combobox > button:hover {
 calffader slider {
   min-width: 1px;
   min-height: 1px;
+}
+
+/* GtkPopoverMenuBar: explicitly propagate menu item text color to buttons */
+popovermenubar.Calf-Menu button {
+  color: #dddddd;
+  background-color: transparent;
+}
+popovermenubar.Calf-Menu button:hover {
+  color: #ffffff;
+  background-color: #333333;
+}
+
+/* GtkDropDown arrow button: ensure the pan-down icon is visible */
+dropdown.calf-combobox > button.arrow-button image {
+  color: #000000;
 }

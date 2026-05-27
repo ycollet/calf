@@ -390,8 +390,10 @@ plugin_strip *gtk_main_window::create_strip(jack_host *plugin)
     gtk_box_append(GTK_BOX(leftBG), leftBox);
     gtk_widget_set_name(leftBG, "CalfMainLeft");
     gtk_widget_add_css_class(leftBG, "CalfMainLeft");
+    gtk_box_append(GTK_BOX(leftBox), GTK_WIDGET(swImg));
+    { GtkWidget *fill = gtk_label_new(""); gtk_widget_set_vexpand(fill, TRUE); gtk_box_append(GTK_BOX(leftBox), fill); }
     gtk_box_append(GTK_BOX(leftBox), GTK_WIDGET(nwImg));
-    gtk_box_prepend(GTK_BOX(leftBox), GTK_WIDGET(swImg));
+    gtk_widget_set_vexpand(leftBox, TRUE);
     gtk_widget_set_visible(GTK_WIDGET(leftBG), TRUE);
     if (!get_config()->rack_ears)
         gtk_widget_set_visible(GTK_WIDGET(leftBG), FALSE);
@@ -404,8 +406,10 @@ plugin_strip *gtk_main_window::create_strip(jack_host *plugin)
     gtk_box_append(GTK_BOX(rightBG), rightBox);
     gtk_widget_set_name(rightBG, "CalfMainRight");
     gtk_widget_add_css_class(rightBG, "CalfMainRight");
+    gtk_box_append(GTK_BOX(rightBox), GTK_WIDGET(seImg));
+    { GtkWidget *fill = gtk_label_new(""); gtk_widget_set_vexpand(fill, TRUE); gtk_box_append(GTK_BOX(rightBox), fill); }
     gtk_box_append(GTK_BOX(rightBox), GTK_WIDGET(neImg));
-    gtk_box_prepend(GTK_BOX(rightBox), GTK_WIDGET(seImg));
+    gtk_widget_set_vexpand(rightBox, TRUE);
     gtk_widget_set_visible(GTK_WIDGET(rightBG), TRUE);
     if (!get_config()->rack_ears)
         gtk_widget_set_visible(GTK_WIDGET(rightBG), FALSE);

@@ -295,10 +295,10 @@ calf_button_snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
         cairo_fill(c);
         draw_bevel(c, bx, by, bw, bh, std::max(0.f, radius - ox - 1), bevel);
 
-        // pin
+        // pin — small state indicator at right edge of toggle/radio buttons
         if (CALF_IS_TOGGLE_BUTTON(widget) or CALF_IS_RADIO_BUTTON(widget)) {
-            int pinh = 3;
-            int pinm = 6;
+            int pinh = 4;
+            int pinw = 8;
             get_text_color(widget, NULL, &r, &g, &b);
             float a;
             if ((gtk_widget_get_state_flags(widget) & GTK_STATE_FLAG_PRELIGHT) != 0)
@@ -307,8 +307,7 @@ calf_button_snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
                 a = 0.2f;
             else
                 a = 0.2f;
-            cairo_rectangle(c, x + sx - border->right - ox + pinm, y + sy / 2 - pinh / 2,
-                border->right - pinm * 2 - ox, pinh);
+            cairo_rectangle(c, x + sx - 14, y + sy / 2 - pinh / 2, pinw, pinh);
             cairo_set_source_rgba(c, r, g, b, a);
             cairo_fill(c);
         }
@@ -332,6 +331,7 @@ static void
 calf_button_init (CalfButton *self)
 {
     gtk_widget_set_size_request(GTK_WIDGET(self), 40, 20);
+    gtk_widget_add_css_class(GTK_WIDGET(self), "calf-button");
 }
 
 GType
@@ -392,6 +392,7 @@ static void
 calf_toggle_button_init (CalfToggleButton *self)
 {
     gtk_widget_set_size_request(GTK_WIDGET(self), 60, 24);
+    gtk_widget_add_css_class(GTK_WIDGET(self), "calf-toggle-button");
 }
 
 GType
@@ -451,6 +452,7 @@ static void
 calf_radio_button_init (CalfRadioButton *self)
 {
     gtk_widget_set_size_request(GTK_WIDGET(self), 40, 20);
+    gtk_widget_add_css_class(GTK_WIDGET(self), "calf-toggle-button");
 }
 
 GType

@@ -132,11 +132,15 @@ calf_knob_snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
     float r, g, b;
     GtkStateFlags state;
 
-    float rmargin = 0.0f;
-    float rwidth  = 0.0f;
-    float tmargin = 0.0f;
-    float twidth  = 0.0f;
-    float tlength = 0.0f;
+    float rmargin, rwidth, tmargin, twidth, tlength;
+    switch (self->size) {
+        case 1:  rmargin=2.2f; rwidth=2.2f; tmargin=6.0f;  twidth=3.0f; tlength=3.0f;  break;
+        case 2:  rmargin=5.5f; rwidth=3.5f; tmargin=12.0f; twidth=1.0f; tlength=8.0f;  break;
+        case 3:  rmargin=4.0f; rwidth=3.8f; tmargin=9.2f;  twidth=1.0f; tlength=5.5f;  break;
+        case 4:  rmargin=6.2f; rwidth=4.2f; tmargin=12.0f; twidth=1.0f; tlength=14.0f; break;
+        case 5:  rmargin=8.5f; rwidth=4.5f; tmargin=16.5f; twidth=1.0f; tlength=17.0f; break;
+        default: rmargin=5.5f; rwidth=3.5f; tmargin=12.0f; twidth=1.0f; tlength=8.0f;  break;
+    }
 
     if (self->debug > 1)
         printf("gtkrc: rm %.2f | rw %.2f | tm %.2f | tw %.2f | tl %.2f\n", rmargin, rwidth, tmargin, twidth, tlength);
