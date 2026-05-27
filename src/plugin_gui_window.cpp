@@ -452,9 +452,10 @@ void plugin_gui_window::create(plugin_ctl_iface *_jh, const char *title, const c
     gtk_box_append(GTK_BOX(vbox), menubar);
 
     // Determine size without content
+    // Use minimum (not natural) to match GTK2 gtk_widget_size_request() behavior
     gtk_widget_set_visible(GTK_WIDGET(vbox), TRUE);
-    gtk_widget_measure(GTK_WIDGET(vbox), GTK_ORIENTATION_HORIZONTAL, -1, NULL, &req2.width, NULL, NULL);
-    gtk_widget_measure(GTK_WIDGET(vbox), GTK_ORIENTATION_VERTICAL,   -1, NULL, &req2.height, NULL, NULL);
+    gtk_widget_measure(GTK_WIDGET(vbox), GTK_ORIENTATION_HORIZONTAL, -1, &req2.width, NULL, NULL, NULL);
+    gtk_widget_measure(GTK_WIDGET(vbox), GTK_ORIENTATION_VERTICAL,   -1, &req2.height, NULL, NULL, NULL);
 
     GtkWidget *sw = gtk_scrolled_window_new();
     gtk_widget_set_visible(GTK_WIDGET(sw), TRUE);
@@ -467,8 +468,8 @@ void plugin_gui_window::create(plugin_ctl_iface *_jh, const char *title, const c
 
     show_rack_ears(environment->get_config()->rack_ears);
 
-    gtk_widget_measure(GTK_WIDGET(container), GTK_ORIENTATION_HORIZONTAL, -1, NULL, &req.width,  NULL, NULL);
-    gtk_widget_measure(GTK_WIDGET(container), GTK_ORIENTATION_VERTICAL,   -1, NULL, &req.height, NULL, NULL);
+    gtk_widget_measure(GTK_WIDGET(container), GTK_ORIENTATION_HORIZONTAL, -1, &req.width,  NULL, NULL, NULL);
+    gtk_widget_measure(GTK_WIDGET(container), GTK_ORIENTATION_VERTICAL,   -1, &req.height, NULL, NULL, NULL);
     int wx = max(req.width + 10, req2.width);
     int wy = req.height + req2.height + 10;
     gtk_window_set_default_size(GTK_WINDOW(win), wx, wy);
