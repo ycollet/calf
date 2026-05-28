@@ -25,9 +25,51 @@
 #include <gdk/gdk.h>
 
 #include <iostream>
+#include <cstring>
 
 using namespace calf_plugins;
 using namespace std;
+
+// ---------------------------------------------------------------------------
+// Debug layout helper — prints widget tree with min/natural sizes and colors.
+// Activated via calfjackhost --debug-layout.
+// ---------------------------------------------------------------------------
+static void debug_print_widget_tree(GtkWidget *widget, int depth)
+{
+    if (!widget || depth > 4) return;
+
+    // Indentation
+    char indent[80];
+    int n = depth * 2 < 78 ? depth * 2 : 78;
+    memset(indent, ' ', n);
+    indent[n] = '\0';
+
+    // Min / natural sizes
+    int min_w = 0, nat_w = 0, min_h = 0, nat_h = 0;
+    gtk_widget_measure(widget, GTK_ORIENTATION_HORIZONTAL, -1, &min_w, &nat_w, NULL, NULL);
+    gtk_widget_measure(widget, GTK_ORIENTATION_VERTICAL,   -1, &min_h, &nat_h, NULL, NULL);
+
+    // Computed CSS color
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+    GtkStyleContext *ctx = gtk_widget_get_style_context(widget);
+    GdkRGBA color = {0.0, 0.0, 0.0, 1.0};
+    gtk_style_context_get_color(ctx, &color);
+    G_GNUC_END_IGNORE_DEPRECATIONS
+
+    const char *type  = G_OBJECT_TYPE_NAME(widget);
+    const char *wname = gtk_widget_get_name(widget);
+
+    g_print("[debug-layout] %s%s \"%s\"  min=%dx%d nat=%dx%d  color=#%02x%02x%02x\n",
+            indent, type, wname ? wname : "",
+            min_w, min_h, nat_w, nat_h,
+            (int)(color.red   * 255 + 0.5),
+            (int)(color.green * 255 + 0.5),
+            (int)(color.blue  * 255 + 0.5));
+
+    for (GtkWidget *child = gtk_widget_get_first_child(widget);
+         child; child = gtk_widget_get_next_sibling(child))
+        debug_print_widget_tree(child, depth + 1);
+}
 
 /***************************** GUI widget ********************************************/
 
@@ -476,12 +518,14 @@ void plugin_gui_window::create(plugin_ctl_iface *_jh, const char *title, const c
     gtk_window_set_default_size(GTK_WINDOW(win), wx, wy);
 
     if (environment->check_condition("debug-layout")) {
-        g_print("[debug-layout] plugin: %s\n", title);
-        g_print("[debug-layout]   container  min=%dx%d  natural=%dx%d\n",
-                req.width, req.height, nat_w, nat_h);
+        g_print("[debug-layout] ========== plugin: %s ==========\n", title);
+        g_print("[debug-layout]   window     default=%dx%d\n", wx, wy);
         g_print("[debug-layout]   menubar    min=%dx%d\n",
                 req2.width, req2.height);
-        g_print("[debug-layout]   window     default=%dx%d\n", wx, wy);
+        g_print("[debug-layout]   container  min=%dx%d  natural=%dx%d\n",
+                req.width, req.height, nat_w, nat_h);
+        g_print("[debug-layout]   --- widget tree (depth <=4, min/nat sizes, CSS color) ---\n");
+        debug_print_widget_tree(container, 0);
     }
     g_signal_connect (GTK_WIDGET(win), "destroy", G_CALLBACK (on_window_destroyed), (plugin_gui_widget *)this);
     if (main)
