@@ -468,12 +468,21 @@ void plugin_gui_window::create(plugin_ctl_iface *_jh, const char *title, const c
 
     show_rack_ears(environment->get_config()->rack_ears);
 
-    gtk_widget_measure(GTK_WIDGET(container), GTK_ORIENTATION_HORIZONTAL, -1, &req.width,  NULL, NULL, NULL);
-    gtk_widget_measure(GTK_WIDGET(container), GTK_ORIENTATION_VERTICAL,   -1, &req.height, NULL, NULL, NULL);
+    int nat_w = 0, nat_h = 0;
+    gtk_widget_measure(GTK_WIDGET(container), GTK_ORIENTATION_HORIZONTAL, -1, &req.width,  &nat_w, NULL, NULL);
+    gtk_widget_measure(GTK_WIDGET(container), GTK_ORIENTATION_VERTICAL,   -1, &req.height, &nat_h, NULL, NULL);
     int wx = max(req.width + 10, req2.width);
     int wy = req.height + req2.height + 10;
     gtk_window_set_default_size(GTK_WINDOW(win), wx, wy);
-    gtk_window_set_default_size(GTK_WINDOW(win), wx, wy);
+
+    if (environment->check_condition("debug-layout")) {
+        g_print("[debug-layout] plugin: %s\n", title);
+        g_print("[debug-layout]   container  min=%dx%d  natural=%dx%d\n",
+                req.width, req.height, nat_w, nat_h);
+        g_print("[debug-layout]   menubar    min=%dx%d\n",
+                req2.width, req2.height);
+        g_print("[debug-layout]   window     default=%dx%d\n", wx, wy);
+    }
     g_signal_connect (GTK_WIDGET(win), "destroy", G_CALLBACK (on_window_destroyed), (plugin_gui_widget *)this);
     if (main)
         main->set_window(gui->plugin, this);

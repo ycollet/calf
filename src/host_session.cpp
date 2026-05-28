@@ -44,6 +44,7 @@ host_session::host_session(session_environment_iface *se)
     gui_win = NULL;
     has_gui = true;
     has_trayicon = true;
+    debug_layout = false;
     session_manager = NULL;
     only_load_if_exists = false;
     save_file_on_next_idle_call = false;
@@ -136,6 +137,8 @@ void host_session::open()
         main_win->add_condition("jackhost");
         main_win->add_condition("directlink");
         main_win->add_condition("configure");
+        if (debug_layout)
+            main_win->add_condition("debug-layout");
     }
     client.create_automation_input();
     if (!session_manager || !session_manager->is_being_restored()) 

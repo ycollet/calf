@@ -422,7 +422,7 @@ char *jack_host::configure(const char *key, const char *value)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static const char *short_options = "c:i:l:o:m:M:s:ehvLnt";
+static const char *short_options = "c:i:l:o:m:M:s:ehvLntd";
 
 static struct option long_options[] = {
     {"help", 0, 0, 'h'},
@@ -438,6 +438,7 @@ static struct option long_options[] = {
     {"list", 0, 0, 'L'},
     {"no-gui", 0, 0, 'n'},
     {"no-tray", 0, 0, 't'},
+    {"debug-layout", 0, 0, 'd'},
     {0,0,0,0},
 };
 
@@ -446,7 +447,8 @@ void print_help(char *argv[])
     printf("JACK host for Calf effects\n"
         "Syntax: %s [--client, -c <name>] [--input, -i <name>] [--output, -o <name>] [--midi, -m <name>] [--load|state, -l|s <session>]\n"
         "       [--connect-midi, -M <name|capture-index>] [--help, -h] [--version, -v] [--list, -L] [--no-tray, -t]\n"
-        "       [!] pluginname[:<preset>] [!] ...\n", 
+        "       [--debug-layout, -d]\n"
+        "       [!] pluginname[:<preset>] [!] ...\n",
         argv[0]);
 }
 
@@ -524,6 +526,9 @@ int main(int argc, char *argv[])
                 break;
             case 't':
                 sess.has_trayicon = false;
+                break;
+            case 'd':
+                sess.debug_layout = true;
                 break;
             case 'l':
             case 's':

@@ -74,6 +74,7 @@ public:
     std::set<std::string> instances;
     bool has_gui;
     bool has_trayicon;
+    bool debug_layout;
     plugin_gui_window *gui_win;
     session_environment_iface *session_env;
     
