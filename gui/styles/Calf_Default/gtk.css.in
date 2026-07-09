@@ -105,18 +105,30 @@ entry.Calf-Entry:selected {
   color: #000000;
 }
 
+/* CalfButton/CalfToggleButton draw their own background/bevel/border via a
+ * custom snapshot vfunc, so strip GTK4's automatic button chrome (it was
+ * rendering behind our custom shape as a visible white "frame" around it). */
+.calf-button,
+.calf-toggle-button {
+  background: none;
+  background-image: none;
+  border-style: none;
+  border-radius: 0;
+  box-shadow: none;
+  outline-style: none;
+  padding: 0;
+  min-width: 0;
+  min-height: 0;
+}
+
 .calf-button {
   font-size: 8pt;
-  background-color: #d9d9d9;
   color: #001a1a;
 }
 .calf-button label { color: #001a1a; }
-.calf-button:hover { background-color: #e6e6e6; }
-.calf-button:active { background-color: #f2f2f2; }
 
 .calf-toggle-button {
   font-size: 8pt;
-  background-color: #d9d9d9;
   color: #001a1a;
 }
 .calf-toggle-button label { color: #001a1a; }
