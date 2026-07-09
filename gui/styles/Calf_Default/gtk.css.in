@@ -234,13 +234,6 @@ scrolledwindow.Calf-Container > viewport {
   background-image: none;
 }
 
-/* Rack title: match GTK2 entry appearance (black bg, lime text) */
-label.Calf-Rack-Title {
-  background-color: #000000;
-  color: #d1ea73;
-  padding: 3px 7px;
-}
-
 /* GtkDropDown button display area */
 dropdown.calf-combobox > button {
   background-image: none;
