@@ -1960,6 +1960,11 @@ GtkWidget *table_container::create(plugin_gui *_gui)
     GtkWidget *table = gtk_grid_new();
     gtk_grid_set_column_spacing(GTK_GRID(table), sx);
     gtk_grid_set_row_spacing(GTK_GRID(table), sy);
+    if (get_int("homogeneous", 0))
+    {
+        gtk_grid_set_column_homogeneous(GTK_GRID(table), TRUE);
+        gtk_grid_set_row_homogeneous(GTK_GRID(table), TRUE);
+    }
     widget = table;
     gtk_widget_set_name(GTK_WIDGET(table), "Calf-Table");
     return table;
