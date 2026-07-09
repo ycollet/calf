@@ -110,6 +110,7 @@ entry.Calf-Entry:selected {
   background-color: #d9d9d9;
   color: #001a1a;
 }
+.calf-button label { color: #001a1a; }
 .calf-button:hover { background-color: #e6e6e6; }
 .calf-button:active { background-color: #f2f2f2; }
 
@@ -118,6 +119,7 @@ entry.Calf-Entry:selected {
   background-color: #d9d9d9;
   color: #001a1a;
 }
+.calf-toggle-button label { color: #001a1a; }
 
 .calf-combobox {
   font-size: 8pt;
@@ -249,7 +251,8 @@ dropdown.calf-combobox > button {
   padding: 2px 6px;
   min-height: 0;
 }
-dropdown.calf-combobox > button > box > label {
+dropdown.calf-combobox button label,
+dropdown.calf-combobox button image {
   color: #000000;
 }
 dropdown.calf-combobox > button:hover {
@@ -270,16 +273,14 @@ calffader slider {
 }
 
 /* GtkPopoverMenuBar: explicitly propagate menu item text color to buttons */
-popovermenubar.Calf-Menu button {
+popovermenubar.Calf-Menu button,
+popovermenubar.Calf-Menu button label {
   color: #dddddd;
   background-color: transparent;
 }
-popovermenubar.Calf-Menu button:hover {
+popovermenubar.Calf-Menu button:hover,
+popovermenubar.Calf-Menu button:hover label {
   color: #ffffff;
   background-color: #333333;
 }
 
-/* GtkDropDown arrow button: ensure the pan-down icon is visible */
-dropdown.calf-combobox > button.arrow-button image {
-  color: #000000;
-}
