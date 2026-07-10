@@ -213,9 +213,15 @@ calf_fader_measure (GtkWidget *widget, GtkOrientation orientation, int for_size,
     CalfFader *fader = CALF_FADER(widget);
     int sz = 40;
     if (fader->image) {
+        /* A horizontal fader's width should track the pixbuf's own width
+         * (its long/travel axis) and its height the pixbuf's height (its
+         * thickness) - and vice versa for a vertical fader. This was
+         * swapped, making every hscale/vscale report a wildly wrong size
+         * (e.g. a 238x36 horizontal slider image reporting a 36-wide,
+         * 238-tall widget instead of 238 wide, 36 tall). */
         sz = (orientation == GTK_ORIENTATION_HORIZONTAL)
-             ? gdk_pixbuf_get_height(fader->image)
-             : gdk_pixbuf_get_width(fader->image);
+             ? gdk_pixbuf_get_width(fader->image)
+             : gdk_pixbuf_get_height(fader->image);
     }
     *minimum = sz;
     *natural = sz;

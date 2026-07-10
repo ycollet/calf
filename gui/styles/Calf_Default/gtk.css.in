@@ -154,12 +154,15 @@ scale.Calf-Scale slider {
 .notebook {
   color: #ffffff;
 }
-notebook > header > tabs > tab {
-  color: #ffffff;
-  background-color: #ffffff;
+notebook > header > tabs > tab,
+notebook > header > tabs > tab label {
+  color: #001a1a;
+  background-color: #d9d9d9;
 }
-notebook > header > tabs > tab:checked {
-  color: #eeeeee;
+notebook > header > tabs > tab:checked,
+notebook > header > tabs > tab:checked label {
+  color: #001a1a;
+  background-color: #e3ff73;
 }
 
 /* Treeview */
@@ -246,6 +249,16 @@ scrolledwindow.Calf-Container > viewport {
   background-image: none;
 }
 
+/* GTK4: GtkNotebook's internal GtkStack (the page content area) has its own
+   opaque default background, hiding the plugin background image behind it
+   (visible only around the notebook, e.g. the Global frame). Make it and
+   its pages transparent so the texture shows through consistently. */
+notebook.CalfNotebook stack,
+notebook.CalfNotebook stack > widget {
+  background-color: transparent;
+  background-image: none;
+}
+
 /* GtkDropDown button display area */
 dropdown.calf-combobox > button {
   background-image: none;
@@ -259,9 +272,36 @@ dropdown.calf-combobox > button {
 dropdown.calf-combobox button label,
 dropdown.calf-combobox button image {
   color: #000000;
+  font-size: 8pt;
 }
 dropdown.calf-combobox > button:hover {
   background-color: #f0ff8a;
+}
+
+/* GtkDropDown popup list (shown when the dropdown is clicked) - unstyled by
+ * default, so it fell back to GTK4's own dark-mode popover chrome (big
+ * shadow/border box, low-contrast text). */
+dropdown.calf-combobox popover,
+dropdown.calf-combobox popover.background {
+  background-color: #d9d9d9;
+  border-style: none;
+  box-shadow: none;
+}
+dropdown.calf-combobox popover contents {
+  background-color: #d9d9d9;
+  padding: 0;
+}
+dropdown.calf-combobox popover listview,
+dropdown.calf-combobox popover listview row,
+dropdown.calf-combobox popover listview row label {
+  background-color: #d9d9d9;
+  color: #000000;
+  font-size: 8pt;
+}
+dropdown.calf-combobox popover listview row:hover,
+dropdown.calf-combobox popover listview row:selected {
+  background-color: #e3ff73;
+  color: #000000;
 }
 
 /* Rack context: Calf-Label/Value match Calf-Rack-Label on the silver rack background */
@@ -271,10 +311,13 @@ dropdown.calf-combobox > button:hover {
   font-size: 5pt;
 }
 
-/* CalfFader: give GTK4 slider gizmo a valid minimum size to suppress -2 warnings */
+/* CalfFader: without an explicit fixed size, GTK4's internal slider handle
+   defaults to expanding to fill nearly the entire trough, leaving almost no
+   travel range for the trough itself (observed collapsing to ~1px). Give it
+   a small fixed size instead. */
 calffader slider {
-  min-width: 1px;
-  min-height: 1px;
+  min-width: 17px;
+  min-height: 17px;
 }
 
 /* GtkPopoverMenuBar: explicitly propagate menu item text color to buttons */
