@@ -138,6 +138,8 @@ calf_toggle_init (CalfToggle *self)
     GtkWidget *widget = GTK_WIDGET(self);
     gtk_widget_set_focusable(widget, TRUE);
     gtk_widget_set_size_request(widget, 30, 20);
+    gtk_widget_set_valign(widget, GTK_ALIGN_CENTER);
+    gtk_widget_set_halign(widget, GTK_ALIGN_CENTER);
     self->size = 1;
 
     GtkGestureClick *click = GTK_GESTURE_CLICK(gtk_gesture_click_new());
@@ -331,6 +333,8 @@ static void
 calf_button_init (CalfButton *self)
 {
     gtk_widget_set_size_request(GTK_WIDGET(self), 40, 20);
+    gtk_widget_set_valign(GTK_WIDGET(self), GTK_ALIGN_CENTER);
+    gtk_widget_set_halign(GTK_WIDGET(self), GTK_ALIGN_CENTER);
     gtk_widget_add_css_class(GTK_WIDGET(self), "calf-button");
 }
 
@@ -452,6 +456,8 @@ static void
 calf_radio_button_init (CalfRadioButton *self)
 {
     gtk_widget_set_size_request(GTK_WIDGET(self), 40, 20);
+    gtk_widget_set_valign(GTK_WIDGET(self), GTK_ALIGN_CENTER);
+    gtk_widget_set_halign(GTK_WIDGET(self), GTK_ALIGN_CENTER);
     gtk_widget_add_css_class(GTK_WIDGET(self), "calf-toggle-button");
 }
 

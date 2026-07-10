@@ -569,6 +569,11 @@ calf_knob_init (CalfKnob *self)
     GtkWidget *widget = GTK_WIDGET(self);
     gtk_widget_set_focusable(widget, TRUE);
     gtk_widget_set_size_request(widget, 40, 40);
+    /* A knob has a fixed intrinsic size and shouldn't stretch just because
+     * its container has leftover space to give it (XML layouts routinely
+     * default to expand/fill on every child). */
+    gtk_widget_set_valign(widget, GTK_ALIGN_CENTER);
+    gtk_widget_set_halign(widget, GTK_ALIGN_CENTER);
     self->knob_image = NULL;
 
     /* scroll controller */

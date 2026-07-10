@@ -37,6 +37,10 @@ calf_combobox_new()
     GtkWidget *widget = gtk_drop_down_new(G_LIST_MODEL(strings), NULL);
     gtk_widget_set_name(widget, "CalfCombobox");
     gtk_widget_add_css_class(widget, "CalfCombobox");
+    /* A dropdown shouldn't stretch vertically just because its container
+     * has leftover space to give it (XML layouts routinely default to
+     * expand/fill on every child) - keep it pinned to its natural height. */
+    gtk_widget_set_valign(widget, GTK_ALIGN_CENTER);
     return widget;
 }
 
