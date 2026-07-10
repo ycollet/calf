@@ -933,13 +933,17 @@ GtkWidget *button_param_control::create(plugin_gui *_gui, int _param_no)
     gui = _gui;
     param_no = _param_no;
     widget  = calf_button_new ((gchar*)get_props().name);
-    g_signal_connect (G_OBJECT (widget), "pressed", G_CALLBACK (button_clicked), (gpointer)this);
-    g_signal_connect (G_OBJECT (widget), "released", G_CALLBACK (button_clicked), (gpointer)this);
+    /* GTK4 removed GtkButton's "pressed"/"released" signals. A separately
+     * added GtkGestureClick doesn't reliably fire either, since GtkButton's
+     * own internal click gesture typically claims the sequence first.
+     * "state-flags-changed" (still a plain GtkWidget signal) piggybacks on
+     * GtkButton's own press tracking instead of competing with it. */
+    g_signal_connect (G_OBJECT (widget), "state-flags-changed", G_CALLBACK (button_state_flags_changed), (gpointer)this);
     gtk_widget_set_name(GTK_WIDGET(widget), "Calf-Button");
     return widget;
 }
 
-void button_param_control::button_clicked(GtkButton *widget, gpointer value)
+void button_param_control::button_state_flags_changed(GtkWidget *widget, GtkStateFlags flags, gpointer value)
 {
     param_control *jhp = (param_control *)value;
     jhp->get();
@@ -1088,12 +1092,16 @@ GtkWidget *tap_button_param_control::create(plugin_gui *_gui, int _param_no)
         gui->window->get_environment()->get_image_factory()->get("tap_prelight"),
         gui->window->get_environment()->get_image_factory()->get("tap_active"));
     //CALF_TAP(widget)->size = get_int("size", 2);
+    /* GTK4 removed GtkWidget's "released"/"leave" signals - use the click
+     * gesture's own "released" plus a motion controller's "leave" instead. */
     GtkGesture *tap_gesture = gtk_gesture_click_new();
     gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(tap_gesture), 1);
     g_signal_connect(tap_gesture, "pressed", G_CALLBACK(tap_button_pressed), (gpointer)this);
+    g_signal_connect(tap_gesture, "released", G_CALLBACK(tap_button_released), (gpointer)this);
     gtk_widget_add_controller(widget, GTK_EVENT_CONTROLLER(tap_gesture));
-    g_signal_connect (G_OBJECT (widget), "released", G_CALLBACK (tap_button_released), (gpointer)this);
-    g_signal_connect (G_OBJECT (widget), "leave", G_CALLBACK (tap_button_released), (gpointer)this);
+    GtkEventController *tap_motion = gtk_event_controller_motion_new();
+    g_signal_connect(tap_motion, "leave", G_CALLBACK(tap_button_leave), (gpointer)this);
+    gtk_widget_add_controller(widget, tap_motion);
     gtk_widget_set_name(GTK_WIDGET(widget), "Calf-TapButton");
     return widget;
 }
@@ -1146,13 +1154,23 @@ void tap_button_param_control::tap_button_stop_waiting(gpointer data)
         gtk_widget_queue_draw(ctl->widget);
     }
 }
-gboolean tap_button_param_control::tap_button_released(GtkWidget *widget, gpointer value)
+gboolean tap_button_param_control::tap_button_released(GtkGestureClick *gesture, gint n_press, gdouble x, gdouble y, gpointer value)
 {
     tap_button_param_control *ctl = (tap_button_param_control *)value;
+    GtkWidget *widget = gtk_event_controller_get_widget(GTK_EVENT_CONTROLLER(gesture));
     CalfTapButton *tap = CALF_TAP_BUTTON(widget);
     tap->state = ctl->last_time ? 1 : 0;
     gtk_widget_queue_draw(widget);
     return FALSE;
+}
+
+void tap_button_param_control::tap_button_leave(GtkEventControllerMotion *controller, gpointer value)
+{
+    tap_button_param_control *ctl = (tap_button_param_control *)value;
+    GtkWidget *widget = gtk_event_controller_get_widget(GTK_EVENT_CONTROLLER(controller));
+    CalfTapButton *tap = CALF_TAP_BUTTON(widget);
+    tap->state = ctl->last_time ? 1 : 0;
+    gtk_widget_queue_draw(widget);
 }
 
 /******************************** Keyboard ********************************/

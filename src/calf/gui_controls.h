@@ -212,7 +212,8 @@ struct tap_button_param_control: public param_control
     virtual void get();
     virtual void set();
     static void tap_button_stop_waiting(gpointer value);
-    static gboolean tap_button_released(GtkWidget *widget, gpointer value);
+    static gboolean tap_button_released(GtkGestureClick *gesture, gint n_press, gdouble x, gdouble y, gpointer value);
+    static void tap_button_leave(GtkEventControllerMotion *controller, gpointer value);
     static gboolean tap_button_pressed(GtkGestureClick *gesture, gint n_press, gdouble x, gdouble y, gpointer value);
 };
 
@@ -234,8 +235,7 @@ struct button_param_control: public param_control
     virtual GtkWidget *create(plugin_gui *_gui, int _param_no);
     virtual void get();
     virtual void set();
-    static void button_clicked(GtkButton *widget, gpointer value);
-    static void button_press_event(GtkButton *widget, GdkEvent *event, gpointer value);
+    static void button_state_flags_changed(GtkWidget *widget, GtkStateFlags flags, gpointer value);
 };
 
 /// Combo list box
