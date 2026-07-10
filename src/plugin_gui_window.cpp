@@ -36,7 +36,7 @@ using namespace std;
 // ---------------------------------------------------------------------------
 static void debug_print_widget_tree(GtkWidget *widget, int depth)
 {
-    if (!widget || depth > 4) return;
+    if (!widget || depth > 8) return;
 
     // Indentation
     char indent[80];
@@ -526,6 +526,7 @@ void plugin_gui_window::create(plugin_ctl_iface *_jh, const char *title, const c
                 req.width, req.height, nat_w, nat_h);
         g_print("[debug-layout]   --- widget tree (depth <=4, min/nat sizes, CSS color) ---\n");
         debug_print_widget_tree(container, 0);
+        fflush(stdout);
     }
     g_signal_connect (GTK_WIDGET(win), "destroy", G_CALLBACK (on_window_destroyed), (plugin_gui_widget *)this);
     if (main)
