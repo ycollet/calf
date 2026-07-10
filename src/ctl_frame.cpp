@@ -32,8 +32,12 @@ GtkWidget *
 calf_frame_new(const char *label)
 {
     GtkWidget *widget = GTK_WIDGET( g_object_new (CALF_TYPE_FRAME, NULL ));
-    CalfFrame *self = CALF_FRAME(widget);
-    gtk_frame_set_label(GTK_FRAME(self), label);
+    /* The label is drawn manually in calf_frame_snapshot(), so it is stashed
+     * as object data instead of via gtk_frame_set_label() - the latter makes
+     * GtkFrame create its own internal GtkLabel child, which the chained-up
+     * parent snapshot below then renders a second time, slightly offset. */
+    g_object_set_data_full(G_OBJECT(widget), "calf-frame-label",
+                            g_strdup(label), g_free);
     return widget;
 }
 static void
@@ -66,7 +70,8 @@ calf_frame_snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
         cairo_clip(c);
 
 
-        const gchar *lab = gtk_frame_get_label(GTK_FRAME(widget));
+        const gchar *lab = (const gchar *)g_object_get_data(G_OBJECT(widget), "calf-frame-label");
+        if (!lab) lab = "";
 
         cairo_select_font_face(c, "Sans",
               CAIRO_FONT_SLANT_NORMAL,

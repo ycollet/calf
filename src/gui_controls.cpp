@@ -2074,6 +2074,11 @@ GtkWidget *frame_container::create(plugin_gui *_gui)
 
 void frame_container::add(control_base *base)
 {
+    /* CalfFrame draws its title text manually via cairo (see
+     * calf_frame_snapshot) instead of using a real GTK label widget, so GTK
+     * never reserves layout space for it - without this margin, the frame's
+     * first child row starts at y=0 and gets overlapped by the title text. */
+    gtk_widget_set_margin_top(base->widget, 16);
     gtk_frame_set_child(GTK_FRAME(widget), base->widget);
 }
 
