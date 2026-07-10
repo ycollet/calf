@@ -8,8 +8,8 @@
         </hbox>
     </align>
     <hbox spacing="10">
-      <vbox>
-      
+      <vbox expand="0" fill="0">
+
         <hbox spacing="4">
           <frame label="Oscillator 1">
             <vbox fill="0">

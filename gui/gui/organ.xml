@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <hbox spacing="8">
-    <frame label="Global">
+    <frame label="Global" expand="0" fill="0">
         <vbox spacing="5">
             <vbox>
                 <label param="master" />

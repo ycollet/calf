@@ -36,7 +36,7 @@
         <!-- TIMING -->
         <frame label="Timing">
             <vbox>
-                <notebook param="timing">
+                <notebook param="timing" expand="0" fill="0">
                     <table page="BPM" rows="3" cols="2">
                         <label param="bpm"  attach-x="0" attach-y="0"/>
                         <knob param="bpm" attach-x="0" attach-y="1" size="5" ticks="30 60 120 180 240 300"/>
@@ -65,21 +65,21 @@
                         <value param="bpm_host"/>
                     </hbox>
                 </notebook>
-                <button param="reset" />
+                <button param="reset" expand="0" fill="0" />
             </vbox>
         </frame>
         <!-- TIMING -->
         <frame label="Modulation">
             <vbox spacing="3">
-                <combo param="mode" />
+                <combo param="mode" expand="0" fill="0" />
                 <label/>
-                <vbox>
+                <vbox expand="0" fill="0">
                     <label param="amount"  />
                     <knob size="5" param="amount" />
                     <value param="amount" />
                 </vbox>
                 <label/>
-                <combo param="pulsewidth" />
+                <combo param="pulsewidth" expand="0" fill="0" />
             </vbox>
         </frame>
         <frame label="Pulse">

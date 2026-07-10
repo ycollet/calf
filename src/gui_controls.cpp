@@ -2082,9 +2082,13 @@ void frame_container::add(control_base *base)
 void box_container::add(control_base *base)
 {
     // Child's explicit expand/fill takes precedence; fall back to container's default.
-    // Matches GTK2 semantics: expand/fill on leaf elements override container default.
-    bool expand = (base->attribs.count("expand") ? base : this)->get_int("expand", 1) != 0;
-    bool fill   = (base->attribs.count("fill")   ? base : this)->get_int("fill",   1) != 0;
+    // Default to not expanding/filling: most leaf elements (knobs, buttons,
+    // combos, labels) have a fixed intrinsic size and shouldn't stretch just
+    // because a sibling elsewhere in the layout happens to need more room.
+    // Elements that do want to grow (line-graphs, listviews, etc.) already
+    // declare expand="1" fill="1" explicitly in the XML.
+    bool expand = (base->attribs.count("expand") ? base : this)->get_int("expand", 0) != 0;
+    bool fill   = (base->attribs.count("fill")   ? base : this)->get_int("fill",   0) != 0;
 
     GtkOrientation orientation = gtk_orientable_get_orientation(GTK_ORIENTABLE(widget));
     if (orientation == GTK_ORIENTATION_VERTICAL) {

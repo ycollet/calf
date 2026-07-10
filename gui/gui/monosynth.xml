@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <hbox spacing="5">
-    <frame label="Global">
+    <frame label="Global" expand="0" fill="0">
         <vbox border="6" spacing="10">
             <vbox expand="0" fill="0">
                 <label param="master"/>
@@ -126,7 +126,7 @@
                     
             </hbox>
             <hbox>
-                <frame label="Filter">
+                <frame label="Filter" expand="1" fill="0">
                     <hbox spacing="2">
                         <vbox>
                             <label param="cutoff"/>
