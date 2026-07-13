@@ -324,6 +324,13 @@ calf_fader_snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
             if (layout) {
                 int lx, ly;
                 gtk_scale_get_layout_offsets(scale, &lx, &ly);
+                /* Without an explicit source color here, this inherits
+                 * whatever cairo_set_source was left over from the slider
+                 * fill above (the fader's pixbuf image pattern), rendering
+                 * the glyphs in a near-invisible, image-textured color
+                 * instead of a solid one. Match .Calf-Value's white (see
+                 * gtk.css.in) used for every other value/knob label. */
+                cairo_set_source_rgb(c, 1.0, 1.0, 1.0);
                 cairo_move_to(c, lx, ly);
                 pango_cairo_show_layout(c, layout);
             }
