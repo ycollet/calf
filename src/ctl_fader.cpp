@@ -252,6 +252,7 @@ calf_fader_snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
         graphene_rect_t bounds = GRAPHENE_RECT_INIT(0, 0, (float)width, (float)height);
         cairo_t *c = gtk_snapshot_append_cairo(snapshot, &bounds);
 
+        cairo_save(c);
         cairo_rectangle(c, l.x, l.y, l.w, l.h);
         cairo_clip(c);
 
@@ -311,6 +312,11 @@ calf_fader_snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
             calf_cairo_set_source_pixbuf(c, i, l.t2x2 - l.t2x1, l.t2y2 - l.t2y1);
         }
         cairo_fill(c);
+
+        // the trough/slider clip above only covers the range rect; the value
+        // label (drawn by GtkScale below/beside it via draw-value) sits
+        // outside that rect and must not be clipped away with it.
+        cairo_restore(c);
 
         // draw value label
         if (gtk_scale_get_draw_value(scale)) {

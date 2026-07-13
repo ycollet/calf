@@ -532,6 +532,11 @@ GtkWidget *hscale_param_control::create(plugin_gui *_gui, int _param_no)
     widget = calf_fader_new(1, get_int("size", 2), 0, 1, get_props().get_increment());
     
     g_signal_connect (G_OBJECT (widget), "value-changed", G_CALLBACK (hscale_value_changed), (gpointer)this);
+    /* draw-value defaults to FALSE on a freshly constructed GtkScale, so
+     * without this the format-value-func below is set up but never used,
+     * and GTK never reserves layout space for the value text - matching
+     * GTK2's look (a formatted value shown below/around the fader). */
+    gtk_scale_set_draw_value(GTK_SCALE(widget), TRUE);
     gtk_scale_set_format_value_func(GTK_SCALE(widget), hscale_format_value, this, NULL);
     {
         GtkGesture *dbl = gtk_gesture_click_new();
