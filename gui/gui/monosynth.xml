@@ -69,11 +69,11 @@
                 
                 <frame label="Oscillators - Common">
                     <vbox>
-                        <vbox>
+                        <vbox expand="1" fill="0">
                             <label param="o12_mix" expand="0" fill="0"/>
                             <hscale param="o12_mix" position="bottom" expand="1" fill="1"/>
                         </vbox>
-                        <hbox homogeneous="1" spacing="20">
+                        <hbox homogeneous="1" spacing="20" expand="1" fill="0">
                             <vbox>
                                 <label param="o12_detune"/>
                                 <knob param="o12_detune" size="3" ticks="0 10 20 30 40 50 60 70 80 90 100" />
@@ -85,7 +85,7 @@
                                 <value param="scale_detune"/>
                             </vbox>
                         </hbox>
-                        <vbox>
+                        <vbox expand="1" fill="0">
                             <label param="phase_mode" />
                             <combo param="phase_mode" fill="0" expand="0"/>
                         </vbox>
