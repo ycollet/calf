@@ -204,6 +204,12 @@ calf_fader_size_allocate (GtkWidget *widget, int width, int height, int baseline
     if (parent_class->size_allocate)
         parent_class->size_allocate(widget, width, height, baseline);
     calf_fader_set_layout(widget);
+    /* Without this, the fader can remain unpainted after its very first
+     * layout pass - confirmed by opening GTK Inspector (which forces a
+     * style/redraw pass across the whole display) making an otherwise
+     * invisible fader appear correctly. Explicitly request a repaint any
+     * time the layout the snapshot depends on is recomputed. */
+    gtk_widget_queue_draw(widget);
 }
 
 static void
